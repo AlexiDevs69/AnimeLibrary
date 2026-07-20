@@ -6,16 +6,84 @@ import string
 import unicodedata
 import uuid
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
-from sqlalchemy import select
+from sqlalchemy import case, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import Anime, Episode, RoomMember, User, WatchRoom
+from app.models import Anime, Episode, RoomMember, User, VideoSource, WatchRoom
 from app.schemas import AnimeOut, RoomCreate, RoomOut
 
 
 INVITE_ALPHABET = string.ascii_uppercase + string.digits
+MANAGED_SOURCE_TYPES = ("licensed_hls", "licensed_mp4", "official_youtube")
+SOURCE_PRIORITY = {
+    "licensed_hls": 0,
+    "licensed_mp4": 1,
+    "official_youtube": 2,
+}
+NON_EPISODE_WORDS = (
+    "trailer",
+    "teaser",
+    "preview",
+    "promo",
+    "promotional",
+    "clip",
+    "music video",
+)
+
+
+class SourceUnavailableError(LookupError):
+    pass
+
+
+def youtube_video_id(url: str) -> str | None:
+    parsed = urlparse(url.strip())
+    hostname = (parsed.hostname or "").lower().removeprefix("www.")
+    candidate: str | None = None
+    if hostname == "youtu.be":
+        candidate = parsed.path.strip("/").split("/", 1)[0]
+    elif hostname in {"youtube.com", "m.youtube.com"}:
+        if parsed.path == "/watch":
+            candidate = parse_qs(parsed.query).get("v", [None])[0]
+        elif parsed.path.startswith(("/embed/", "/shorts/", "/live/")):
+            parts = parsed.path.strip("/").split("/")
+            candidate = parts[1] if len(parts) > 1 else None
+    if candidate and re.fullmatch(r"[A-Za-z0-9_-]{11}", candidate):
+        return candidate
+    return None
+
+
+def streaming_episode_number(title: str) -> int | None:
+    lowered = " ".join(title.lower().split())
+    if any(re.search(rf"\b{re.escape(word)}\b", lowered) for word in NON_EPISODE_WORDS):
+        return None
+    patterns = (
+        r"(?:episode|ep\.?|епізод|серія|серия)\s*#?0*(\d{1,4})\b",
+        r"^\s*0*(\d{1,4})(?:\s*[-.:]|\s*$)",
+    )
+    for pattern in patterns:
+        match = re.search(pattern, lowered, flags=re.IGNORECASE)
+        if match:
+            number = int(match.group(1))
+            return number if number > 0 else None
+    return None
+
+
+def official_youtube_episodes(item: dict[str, Any]) -> list[tuple[int, str, str | None]]:
+    episodes: list[tuple[int, str, str | None]] = []
+    seen: set[tuple[int, str]] = set()
+    for stream in item.get("streamingEpisodes") or []:
+        title = str(stream.get("title") or "").strip()
+        video_id = youtube_video_id(str(stream.get("url") or ""))
+        number = streaming_episode_number(title)
+        if video_id is None or number is None or (number, video_id) in seen:
+            continue
+        seen.add((number, video_id))
+        thumbnail = str(stream.get("thumbnail") or "").strip() or None
+        episodes.append((number, video_id, thumbnail))
+    return episodes
 
 
 def make_slug(title: str, anilist_id: int) -> str:
@@ -91,6 +159,58 @@ async def cache_anime_batch(
                     )
                 )
 
+    await db.flush()
+
+    for anime, item in zip(ordered, items, strict=True):
+        youtube_episodes = official_youtube_episodes(item)
+        if not youtube_episodes:
+            continue
+        numbers = [number for number, _, _ in youtube_episodes]
+        episode_result = await db.execute(
+            select(Episode).where(
+                Episode.anime_id == anime.id,
+                Episode.number.in_(numbers),
+            )
+        )
+        episodes_by_number = {episode.number: episode for episode in episode_result.scalars()}
+        prepared_sources: list[tuple[Episode, str]] = []
+        for number, video_id, thumbnail in youtube_episodes:
+            episode = episodes_by_number.get(number)
+            if episode is None:
+                episode = Episode(
+                    anime_id=anime.id,
+                    number=number,
+                    duration=anime.episode_duration,
+                    thumbnail_url=thumbnail,
+                )
+                db.add(episode)
+                episodes_by_number[number] = episode
+            elif thumbnail and not episode.thumbnail_url:
+                episode.thumbnail_url = thumbnail
+            prepared_sources.append((episode, video_id))
+
+        await db.flush()
+        episode_ids = [episode.id for episode, _ in prepared_sources]
+        source_result = await db.execute(
+            select(VideoSource.episode_id, VideoSource.source_reference).where(
+                VideoSource.episode_id.in_(episode_ids),
+                VideoSource.source_type == "official_youtube",
+            )
+        )
+        existing_sources = set(source_result.tuples())
+        for episode, video_id in prepared_sources:
+            if (episode.id, video_id) not in existing_sources:
+                db.add(
+                    VideoSource(
+                        episode_id=episode.id,
+                        source_type="official_youtube",
+                        source_reference=video_id,
+                        language=None,
+                        region=None,
+                        is_active=True,
+                    )
+                )
+
     await db.commit()
     return ordered
 
@@ -98,13 +218,47 @@ async def cache_anime_batch(
 async def get_anime_detail(db: AsyncSession, anime_id: uuid.UUID) -> Anime | None:
     result = await db.execute(
         select(Anime)
-        .options(selectinload(Anime.episodes))
+        .options(selectinload(Anime.episodes).selectinload(Episode.sources))
         .where(Anime.id == anime_id)
     )
     anime = result.scalar_one_or_none()
     if anime is not None:
         anime.episodes.sort(key=lambda episode: episode.number)
     return anime
+
+
+async def resolve_video_source(
+    db: AsyncSession,
+    *,
+    anime_id: uuid.UUID,
+    episode_number: int,
+    source_id: uuid.UUID | None,
+    source_type: str,
+) -> VideoSource | None:
+    query = (
+        select(VideoSource)
+        .join(Episode, Episode.id == VideoSource.episode_id)
+        .where(
+            Episode.anime_id == anime_id,
+            Episode.number == episode_number,
+            VideoSource.is_active.is_(True),
+            VideoSource.source_type.in_(MANAGED_SOURCE_TYPES),
+        )
+    )
+    if source_id is not None:
+        query = query.where(VideoSource.id == source_id)
+    elif source_type in MANAGED_SOURCE_TYPES:
+        query = query.where(VideoSource.source_type == source_type)
+    query = query.order_by(
+        case(
+            (VideoSource.source_type == "licensed_hls", 0),
+            (VideoSource.source_type == "licensed_mp4", 1),
+            (VideoSource.source_type == "official_youtube", 2),
+            else_=9,
+        ),
+        VideoSource.created_at.asc(),
+    ).limit(1)
+    return (await db.execute(query)).scalar_one_or_none()
 
 
 async def unique_invite_code(db: AsyncSession, length: int = 8) -> str:
@@ -122,6 +276,20 @@ async def create_room(db: AsyncSession, data: RoomCreate) -> tuple[WatchRoom, Us
         if anime is None:
             raise LookupError("Аніме не знайдено")
 
+    resolved_source: VideoSource | None = None
+    if data.source_type != "local_file":
+        if data.anime_id is None:
+            raise SourceUnavailableError("Спочатку виберіть аніме та серію")
+        resolved_source = await resolve_video_source(
+            db,
+            anime_id=data.anime_id,
+            episode_number=data.episode_number,
+            source_id=data.source_id,
+            source_type=data.source_type,
+        )
+        if resolved_source is None:
+            raise SourceUnavailableError("Для цієї серії ще немає повного відео")
+
     host = User(display_name=data.host_name, is_guest=True)
     db.add(host)
     await db.flush()
@@ -131,9 +299,11 @@ async def create_room(db: AsyncSession, data: RoomCreate) -> tuple[WatchRoom, Us
         host_id=host.id,
         anime_id=data.anime_id,
         episode_number=data.episode_number,
-        source_type=data.source_type,
-        source_reference=data.source_reference,
-        file_hash=data.file_hash,
+        source_type=resolved_source.source_type if resolved_source else "local_file",
+        source_reference=(
+            resolved_source.source_reference if resolved_source else data.source_reference
+        ),
+        file_hash=data.file_hash if resolved_source is None else None,
         is_public=data.is_public,
         allow_members_control=data.allow_members_control,
     )
