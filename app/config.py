@@ -1,20 +1,28 @@
 from functools import lru_cache
 from pathlib import Path
+from typing import Annotated
+from urllib.parse import urlparse
 
 from pydantic import field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
 class Settings(BaseSettings):
-    app_name: str = "Anime Together"
+    app_name: str = "AnimeLibrary"
     debug: bool = False
     auto_create_tables: bool = False
     database_url: str = "postgresql+asyncpg://anime:anime@localhost:5432/anime_together"
     redis_url: str = "redis://localhost:6379/0"
     anilist_api_url: str = "https://graphql.anilist.co"
+    kodik_api_url: str = "https://kodikapi.com"
+    kodik_token: str = ""
+    kodik_player_origins: Annotated[list[str], NoDecode] = ["https://kodik.info"]
+    kodik_sync_ttl_seconds: int = 6 * 60 * 60
+    kodik_max_translations: int = 8
+    admin_api_key: str = ""
     cors_origins: list[str] = ["http://localhost:8000", "http://127.0.0.1:8000"]
 
     model_config = SettingsConfigDict(
@@ -29,6 +37,39 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
+
+    @field_validator("kodik_player_origins", mode="before")
+    @classmethod
+    def split_kodik_player_origins(cls, value: object) -> object:
+        if isinstance(value, str):
+            return [origin.strip() for origin in value.split(",") if origin.strip()]
+        return value
+
+    @field_validator("kodik_api_url")
+    @classmethod
+    def validate_kodik_api_url(cls, value: str) -> str:
+        cleaned = value.strip().rstrip("/")
+        parsed = urlparse(cleaned)
+        if parsed.scheme != "https" or parsed.hostname != "kodikapi.com":
+            raise ValueError("KODIK_API_URL має бути https://kodikapi.com")
+        if parsed.username or parsed.password or parsed.query or parsed.fragment:
+            raise ValueError("KODIK_API_URL не повинен містити облікові дані або параметри")
+        return cleaned
+
+    @field_validator("kodik_player_origins")
+    @classmethod
+    def validate_kodik_player_origins(cls, values: list[str]) -> list[str]:
+        origins: list[str] = []
+        for value in values:
+            parsed = urlparse(value.strip())
+            if parsed.scheme != "https" or not parsed.hostname:
+                raise ValueError("KODIK_PLAYER_ORIGINS мають бути HTTPS-origin адресами")
+            if parsed.username or parsed.password or parsed.query or parsed.fragment:
+                raise ValueError("KODIK_PLAYER_ORIGINS не повинні містити зайві частини URL")
+            origin = f"https://{parsed.netloc}"
+            if origin not in origins:
+                origins.append(origin)
+        return origins
 
     @field_validator("database_url", mode="after")
     @classmethod
