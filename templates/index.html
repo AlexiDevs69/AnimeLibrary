@@ -463,7 +463,7 @@
       .modal-anime-preview p, .modal-card-small > p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
       .modal-form { display: grid; gap: 14px; margin-top: 21px; text-align: left; }
       .modal-form label:not(.toggle-row) { display: grid; gap: 7px; color: #c5c6cc; font-size: 10px; font-weight: 700; }
-      .modal-form input {
+      .modal-form input, .modal-form select {
         width: 100%;
         height: 45px;
         min-width: 0;
@@ -475,7 +475,11 @@
         color: var(--text);
         font-size: 12px;
       }
-      .modal-form input:focus { border-color: rgba(121, 169, 198, .7); box-shadow: 0 0 0 2px rgba(121, 169, 198, .12); }
+      .modal-form input:focus, .modal-form select:focus { border-color: rgba(121, 169, 198, .7); box-shadow: 0 0 0 2px rgba(121, 169, 198, .12); }
+      .modal-form select { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%); background-position: calc(100% - 17px) 19px, calc(100% - 12px) 19px; background-size: 5px 5px; background-repeat: no-repeat; }
+      .source-availability { min-height: 16px; margin: -4px 1px 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+      .source-availability.ready { color: var(--green); }
+      .source-availability.error { color: var(--red); }
       .toggle-row { position: relative; display: flex; align-items: center; gap: 15px; padding: 13px; border: 1px solid var(--line); border-radius: 11px; background: rgba(255, 255, 255, .02); }
       .toggle-row > span:first-child { display: grid; gap: 3px; margin-right: auto; }
       .toggle-row strong { font-size: 11px; }
@@ -719,8 +723,8 @@
         background: linear-gradient(145deg, #17242e, #0d171f);
         box-shadow: 0 22px 58px rgba(0, 0, 0, .34);
       }
-      .modal-form input { border-radius: 8px; background: #0b141b; }
-      .modal-form input:focus { border-color: rgba(121, 169, 198, .58); box-shadow: 0 0 0 2px rgba(121, 169, 198, .09); }
+      .modal-form input, .modal-form select { border-radius: 8px; background-color: #0b141b; }
+      .modal-form input:focus, .modal-form select:focus { border-color: rgba(121, 169, 198, .58); box-shadow: 0 0 0 2px rgba(121, 169, 198, .09); }
       .toggle-row { border-radius: 10px; }
       .toggle-row input:checked + .toggle-track { background: #719a88; }
       .modal-room-icon { border-radius: 13px; background: rgba(121, 169, 198, .1); color: #9fc4ad; }
@@ -975,8 +979,13 @@
           </label>
           <label>
             <span data-i18n="episode">Серія</span>
-            <input id="create-room-episode" type="number" min="1" value="1" required>
+            <select id="create-room-episode" required></select>
           </label>
+          <label>
+            <span data-i18n="videoVersion">Версія відео</span>
+            <select id="create-room-source" required></select>
+          </label>
+          <p class="source-availability" id="source-availability" data-i18n="loadingEpisodes">Перевіряємо доступні повні серії…</p>
           <label class="toggle-row">
             <span>
               <strong data-i18n="sharedControls">Спільне керування</strong>
@@ -1031,6 +1040,7 @@
           haveCode: "У мене є код", footerText: "Каталог на основі AniList. Відеофайли не зберігаються на сервері.",
           newRoom: "Нова кімната", createRoomTitle: "Підготуємо спільний перегляд", yourName: "Ваше ім’я", namePlaceholder: "Як вас показувати в кімнаті",
           episode: "Серія", episodeShort: "{count} сер.", ongoing: "Онґоїнг", sharedControls: "Спільне керування", sharedControlsText: "Учасники зможуть ставити паузу й перемотувати.",
+          videoVersion: "Версія відео", loadingEpisodes: "Перевіряємо доступні повні серії…", noFullEpisodes: "Для цього тайтлу ще немає доданих повних серій.", fullEpisodesReady: "Доступно повних серій: {count}",
           createAndContinue: "Створити й продовжити", createRoom: "Створити кімнату", creating: "Створюємо…", invitation: "Запрошення", joinRoomTitle: "Увійти в кімнату",
           joinRoomDescription: "Вставте восьмизначний код, який надіслав власник кімнати.", roomCode: "Код кімнати", enterRoom: "Увійти", serverError: "Помилка сервера",
           backToCatalog: "До каталогу", copyLink: "Копіювати посилання", watchParty: "Watch Party", connecting: "Підключення…", synchronized: "Синхронізовано", reconnecting: "Перепідключення…",
@@ -1055,6 +1065,7 @@
           haveCode: "I have a code", footerText: "Catalog powered by AniList. Video files are never stored on the server.",
           newRoom: "New room", createRoomTitle: "Set up a watch party", yourName: "Your name", namePlaceholder: "How others will see you",
           episode: "Episode", episodeShort: "{count} eps.", ongoing: "Ongoing", sharedControls: "Shared controls", sharedControlsText: "Members can pause and seek.",
+          videoVersion: "Video version", loadingEpisodes: "Checking available full episodes…", noFullEpisodes: "No full episodes have been added for this title yet.", fullEpisodesReady: "Full episodes available: {count}",
           createAndContinue: "Create and continue", createRoom: "Create room", creating: "Creating…", invitation: "Invitation", joinRoomTitle: "Join a room",
           joinRoomDescription: "Enter the eight-character code sent by the room owner.", roomCode: "Room code", enterRoom: "Join", serverError: "Server error",
           backToCatalog: "Back to catalog", copyLink: "Copy link", watchParty: "Watch Party", connecting: "Connecting…", synchronized: "Synchronized", reconnecting: "Reconnecting…",
@@ -1079,6 +1090,7 @@
           haveCode: "У меня есть код", footerText: "Каталог на основе AniList. Видеофайлы не хранятся на сервере.",
           newRoom: "Новая комната", createRoomTitle: "Подготовим совместный просмотр", yourName: "Ваше имя", namePlaceholder: "Как вас показывать в комнате",
           episode: "Серия", episodeShort: "{count} сер.", ongoing: "Онгоинг", sharedControls: "Общее управление", sharedControlsText: "Участники смогут ставить паузу и перематывать.",
+          videoVersion: "Версия видео", loadingEpisodes: "Проверяем доступные полные серии…", noFullEpisodes: "Для этого тайтла пока нет добавленных полных серий.", fullEpisodesReady: "Доступно полных серий: {count}",
           createAndContinue: "Создать и продолжить", createRoom: "Создать комнату", creating: "Создаём…", invitation: "Приглашение", joinRoomTitle: "Войти в комнату",
           joinRoomDescription: "Введите восьмизначный код, который прислал владелец комнаты.", roomCode: "Код комнаты", enterRoom: "Войти", serverError: "Ошибка сервера",
           backToCatalog: "К каталогу", copyLink: "Копировать ссылку", watchParty: "Watch Party", connecting: "Подключение…", synchronized: "Синхронизировано", reconnecting: "Переподключение…",
@@ -1278,6 +1290,7 @@
       let catalogItems = [];
       let currentQuery = "";
       let selectedAnime = null;
+      let selectedAnimeDetail = null;
 
       function renderCatalogItems() {
         const grid = document.querySelector("#anime-grid");
@@ -1325,16 +1338,66 @@
         if (!document.querySelector(".modal-backdrop:not([hidden])")) document.body.classList.remove("modal-open");
       }
 
-      function openCreateRoomModal(anime) {
+      function sourceOptionLabel(source) {
+        const kind = source.source_type === "licensed_hls"
+          ? "HLS"
+          : source.source_type === "official_youtube" ? "YouTube · official" : "MP4";
+        return [source.language?.toUpperCase(), source.region?.toUpperCase(), kind].filter(Boolean).join(" · ");
+      }
+
+      function refreshSourceOptions() {
+        const episodeSelect = document.querySelector("#create-room-episode");
+        const sourceSelect = document.querySelector("#create-room-source");
+        const episode = selectedAnimeDetail?.episodes.find((item) => String(item.number) === episodeSelect.value);
+        sourceSelect.replaceChildren(...(episode?.sources || []).map((source) => {
+          const option = document.createElement("option");
+          option.value = source.id;
+          option.textContent = sourceOptionLabel(source);
+          return option;
+        }));
+      }
+
+      async function openCreateRoomModal(anime) {
         selectedAnime = anime;
+        selectedAnimeDetail = null;
         const modal = document.querySelector("#create-room-modal");
+        const episodeSelect = document.querySelector("#create-room-episode");
+        const sourceSelect = document.querySelector("#create-room-source");
+        const availability = document.querySelector("#source-availability");
+        const submit = document.querySelector("#create-room-form .modal-primary");
         document.querySelector("#modal-anime-title").textContent = displayTitle(anime);
         const poster = document.querySelector("#modal-anime-poster");
         poster.src = anime.poster_url || "";
         poster.alt = displayTitle(anime);
         document.querySelector("#create-room-name").value = localStorage.getItem("watch-name") || "";
-        document.querySelector("#create-room-episode").value = "1";
+        episodeSelect.replaceChildren();
+        sourceSelect.replaceChildren();
+        availability.textContent = t("loadingEpisodes");
+        availability.className = "source-availability";
+        submit.disabled = true;
         openModal(modal);
+        try {
+          selectedAnimeDetail = await api(`/api/anime/${anime.id}`);
+          const readyEpisodes = selectedAnimeDetail.episodes.filter((episode) => episode.sources.length > 0);
+          episodeSelect.replaceChildren(...readyEpisodes.map((episode) => {
+            const option = document.createElement("option");
+            option.value = episode.number;
+            option.textContent = t("episodeNumber", { count: episode.number });
+            return option;
+          }));
+          if (!readyEpisodes.length) {
+            availability.textContent = t("noFullEpisodes");
+            availability.className = "source-availability error";
+            return;
+          }
+          refreshSourceOptions();
+          availability.textContent = t("fullEpisodesReady", { count: readyEpisodes.length });
+          availability.className = "source-availability ready";
+          submit.disabled = false;
+        } catch (error) {
+          availability.textContent = error.message;
+          availability.className = "source-availability error";
+        }
       }
 
       function openJoinRoomModal() {
@@ -1381,6 +1444,7 @@
         document.querySelector("#join-room-code").addEventListener("input", (event) => {
           event.target.value = event.target.value.replace(/[^a-z0-9]/gi, "").toUpperCase();
         });
+        document.querySelector("#create-room-episode").addEventListener("change", refreshSourceOptions);
         document.querySelector("#create-room-form").addEventListener("submit", async (event) => {
           event.preventDefault();
           if (!selectedAnime) return;
@@ -1396,7 +1460,8 @@
                 host_name: name,
                 anime_id: selectedAnime.id,
                 episode_number: Number(document.querySelector("#create-room-episode").value) || 1,
-                source_type: "local_file",
+                source_type: "auto",
+                source_id: document.querySelector("#create-room-source").value,
                 allow_members_control: document.querySelector("#create-room-controls").checked,
               }),
             });
