@@ -1339,7 +1339,9 @@
       }
 
       function sourceOptionLabel(source) {
-        const kind = source.source_type === "licensed_hls"
+        const kind = source.source_type === "anilibria_hls"
+          ? "AniLibria · HLS"
+          : source.source_type === "licensed_hls"
           ? "HLS"
           : source.source_type === "official_youtube"
             ? "YouTube · official"
