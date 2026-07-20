@@ -870,6 +870,14 @@
           <div class="player-shell">
             <video id="watch-player" controls playsinline preload="metadata"></video>
             <div class="youtube-player" id="youtube-player" hidden></div>
+            <iframe
+              id="kodik-player"
+              title="Kodik player"
+              allow="autoplay; fullscreen; picture-in-picture"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen
+              hidden
+            ></iframe>
             <label class="file-drop" id="file-drop" for="video-file">
               <span class="upload-orb">
                 <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 16V5m0 0L8 9m4-4 4 4M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -974,6 +982,7 @@
           sameFileNotice: "Усі учасники мають вибрати однаковий файл серії.", selectedInRoom: "У кімнаті вибрано: {name}", checkingFile: "Перевіряємо файл…", fileMatches: "Файл збігається: {name}", episodeReady: "серія готова",
           managedEpisodeReady: "Повна серія готова — нічого завантажувати не потрібно.", loadingVideo: "Готуємо повну серію…", videoLoadFailed: "Не вдалося відкрити відео. Перевірте URL і CORS сховища.", videoTooShort: "Це джерело схоже на уривок, тому відтворення зупинено.",
           officialEpisodeReady: "Офіційна повна серія готова до перегляду.", youtubeUnavailable: "Офіційна серія недоступна у вашому регіоні або заборонена для вбудовування.",
+          kodikEpisodeReady: "Серія Kodik готова — плеєр синхронізовано з кімнатою.", kodikUnavailable: "Не вдалося відкрити Kodik-плеєр або його origin не дозволено.",
           autoplayBlocked: "Браузер заблокував автозапуск — натисніть Play один раз.", roomCommunication: "Спілкування", roomChat: "Чат кімнати", online: "Онлайн", connectingToRoom: "Підключаємося до кімнати…",
           messagePlaceholder: "Написати повідомлення…", send: "Надіслати", privateRoom: "Приватна кімната за посиланням", almostReady: "Майже готово", introduceYourself: "Як вас показувати в кімнаті?",
           introduceText: "Це ім’я бачитимуть інші учасники в чаті.", joinWatch: "Приєднатися до перегляду", connectedMessage: "Ви підключилися до кімнати.", memberJoined: "{name} приєднався(-лась).", memberLeft: "{name} вийшов(-ла).",
@@ -1000,6 +1009,7 @@
           sameFileNotice: "All members must choose the same episode file.", selectedInRoom: "Selected in this room: {name}", checkingFile: "Checking file…", fileMatches: "File matches: {name}", episodeReady: "episode ready",
           managedEpisodeReady: "The full episode is ready — no upload needed.", loadingVideo: "Preparing the full episode…", videoLoadFailed: "Could not open the video. Check the storage URL and CORS.", videoTooShort: "This source looks like a preview, so playback was stopped.",
           officialEpisodeReady: "The official full episode is ready to watch.", youtubeUnavailable: "The official episode is unavailable in your region or cannot be embedded.",
+          kodikEpisodeReady: "The Kodik episode is ready and synchronized with the room.", kodikUnavailable: "Could not open the Kodik player or its origin is not allowed.",
           autoplayBlocked: "Your browser blocked autoplay — press Play once.", roomCommunication: "Conversation", roomChat: "Room chat", online: "Online", connectingToRoom: "Connecting to the room…",
           messagePlaceholder: "Write a message…", send: "Send", privateRoom: "Private link-only room", almostReady: "Almost ready", introduceYourself: "What should we call you?",
           introduceText: "Other members will see this name in chat.", joinWatch: "Join the watch party", connectedMessage: "You joined the room.", memberJoined: "{name} joined.", memberLeft: "{name} left.",
@@ -1026,6 +1036,7 @@
           sameFileNotice: "Все участники должны выбрать одинаковый файл серии.", selectedInRoom: "В комнате выбран: {name}", checkingFile: "Проверяем файл…", fileMatches: "Файл совпадает: {name}", episodeReady: "серия готова",
           managedEpisodeReady: "Полная серия готова — ничего загружать не нужно.", loadingVideo: "Готовим полную серию…", videoLoadFailed: "Не удалось открыть видео. Проверьте URL и CORS хранилища.", videoTooShort: "Этот источник похож на отрывок, поэтому воспроизведение остановлено.",
           officialEpisodeReady: "Официальная полная серия готова к просмотру.", youtubeUnavailable: "Официальная серия недоступна в вашем регионе или запрещена для встраивания.",
+          kodikEpisodeReady: "Серия Kodik готова — плеер синхронизирован с комнатой.", kodikUnavailable: "Не удалось открыть Kodik-плеер или его origin не разрешён.",
           autoplayBlocked: "Браузер заблокировал автозапуск — нажмите Play один раз.", roomCommunication: "Общение", roomChat: "Чат комнаты", online: "Онлайн", connectingToRoom: "Подключаемся к комнате…",
           messagePlaceholder: "Написать сообщение…", send: "Отправить", privateRoom: "Приватная комната по ссылке", almostReady: "Почти готово", introduceYourself: "Как вас показывать в комнате?",
           introduceText: "Это имя увидят другие участники в чате.", joinWatch: "Присоединиться к просмотру", connectedMessage: "Вы подключились к комнате.", memberJoined: "{name} присоединился(-лась).", memberLeft: "{name} вышел(-ла).",
@@ -1416,6 +1427,7 @@
         const code = document.body.dataset.roomCode;
         const player = document.querySelector("#watch-player");
         const youtubeMount = document.querySelector("#youtube-player");
+        const kodikMount = document.querySelector("#kodik-player");
         const fileInput = document.querySelector("#video-file");
         const fileDrop = document.querySelector("#file-drop");
         const fileStatus = document.querySelector("#file-status");
@@ -1431,6 +1443,12 @@
         let youtubeReady = false;
         let youtubePoll = null;
         let youtubeSample = null;
+        let kodikReady = false;
+        let kodikOrigin = "";
+        let kodikCurrentTime = 0;
+        let kodikDuration = 0;
+        let kodikPaused = true;
+        let kodikSample = null;
         let rejectedShortSource = false;
 
         function setPlayerStatus(message, state = "") {
@@ -1505,26 +1523,38 @@
         window.addEventListener("languagechange", updateRoomLanguage);
 
         const isYouTubeSource = () => roomData?.source_type === "official_youtube";
+        const isKodikSource = () => roomData?.source_type === "kodik_embed";
         const expectedEpisodeSeconds = () => Number(roomData?.anime?.episode_duration || 0) * 60;
 
         function playbackReady() {
-          return isYouTubeSource() ? youtubeReady : Boolean(player.currentSrc || player.src);
+          if (isYouTubeSource()) return youtubeReady;
+          if (isKodikSource()) return kodikReady;
+          return Boolean(player.currentSrc || player.src);
         }
 
         function currentPlaybackTime() {
-          return isYouTubeSource() && youtubeReady
-            ? Number(youtubePlayer.getCurrentTime() || 0)
-            : Number(player.currentTime || 0);
+          if (isYouTubeSource() && youtubeReady) return Number(youtubePlayer.getCurrentTime() || 0);
+          if (isKodikSource() && kodikReady) return Number(kodikCurrentTime || 0);
+          return Number(player.currentTime || 0);
         }
 
         function currentPlaybackRate() {
-          return isYouTubeSource() && youtubeReady
-            ? Number(youtubePlayer.getPlaybackRate() || 1)
-            : Number(player.playbackRate || 1);
+          if (isYouTubeSource() && youtubeReady) return Number(youtubePlayer.getPlaybackRate() || 1);
+          if (isKodikSource()) return 1;
+          return Number(player.playbackRate || 1);
+        }
+
+        function postKodik(action, extra = {}) {
+          if (!kodikReady || !kodikOrigin || !kodikMount.contentWindow) return;
+          kodikMount.contentWindow.postMessage(
+            { key: "kodik_player_api", value: { action, ...extra } },
+            kodikOrigin,
+          );
         }
 
         function seekPlayback(seconds) {
           if (isYouTubeSource()) youtubePlayer?.seekTo(Math.max(0, seconds), true);
+          else if (isKodikSource()) postKodik("seek", { time: Math.max(0, seconds) });
           else player.currentTime = Math.max(0, seconds);
         }
 
@@ -1532,19 +1562,24 @@
           if (isYouTubeSource()) {
             const available = youtubePlayer?.getAvailablePlaybackRates?.() || [1];
             youtubePlayer?.setPlaybackRate(available.includes(rate) ? rate : 1);
-          } else {
+          } else if (!isKodikSource()) {
             player.playbackRate = rate;
           }
         }
 
         function pausePlayback() {
           if (isYouTubeSource()) youtubePlayer?.pauseVideo();
+          else if (isKodikSource()) postKodik("pause");
           else player.pause();
         }
 
         async function playPlayback() {
           if (isYouTubeSource()) {
             youtubePlayer?.playVideo();
+            return;
+          }
+          if (isKodikSource()) {
+            postKodik("play");
             return;
           }
           await player.play();
@@ -1636,6 +1671,75 @@
           }
         }
 
+        function handleKodikMessage(event) {
+          if (!isKodikSource() || !kodikOrigin || event.origin !== kodikOrigin) return;
+          if (event.source !== kodikMount.contentWindow) return;
+          if (event.data?.key !== "kodik_player_api" || typeof event.data.value !== "object") return;
+          const message = event.data.value;
+          if (message.event === "timeupdate") {
+            const current = Number(message.currentTime);
+            const duration = Number(message.duration);
+            if (!Number.isFinite(current) || current < 0) return;
+            kodikCurrentTime = current;
+            if (Number.isFinite(duration) && duration > 0) kodikDuration = duration;
+            if (!kodikReady) {
+              kodikReady = true;
+              setPlayerStatus(t("kodikEpisodeReady"), "success");
+              if (pendingState) applyState(pendingState);
+            }
+            const now = performance.now();
+            if (!applyingRemote && kodikSample) {
+              const elapsed = (now - kodikSample.at) / 1000;
+              const expected = kodikSample.time + (kodikPaused ? 0 : elapsed);
+              if (Math.abs(current - expected) > 1.75) send("seek");
+            }
+            kodikSample = { time: current, at: now };
+            return;
+          }
+          if (message.event === "play") {
+            kodikPaused = false;
+            kodikSample = { time: kodikCurrentTime, at: performance.now() };
+            if (!applyingRemote) send("play");
+          } else if (message.event === "pause") {
+            kodikPaused = true;
+            kodikSample = { time: kodikCurrentTime, at: performance.now() };
+            if (!applyingRemote) send("pause");
+          } else if (message.event === "episode_changed") {
+            const expectedEpisode = Number(roomData?.episode_number || 1);
+            if (Number(message.episode) !== expectedEpisode) {
+              setPlayerStatus(t("kodikUnavailable"), "error");
+              kodikMount.src = roomData.source_reference;
+            }
+          }
+        }
+
+        function attachKodik(sourceUrl) {
+          let parsed;
+          try {
+            parsed = new URL(sourceUrl);
+            if (parsed.protocol !== "https:") throw new Error("HTTPS required");
+          } catch {
+            setPlayerStatus(t("kodikUnavailable"), "error");
+            return;
+          }
+          fileDrop.classList.add("hidden");
+          player.hidden = true;
+          youtubeMount.hidden = true;
+          kodikMount.hidden = false;
+          kodikOrigin = parsed.origin;
+          kodikReady = false;
+          setPlayerStatus(t("loadingVideo"));
+          kodikMount.addEventListener("load", async () => {
+            kodikReady = true;
+            kodikPaused = true;
+            kodikSample = { time: 0, at: performance.now() };
+            setPlayerStatus(t("kodikEpisodeReady"), "success");
+            if (pendingState) await applyState(pendingState);
+          }, { once: true });
+          window.addEventListener("message", handleKodikMessage);
+          kodikMount.src = parsed.href;
+        }
+
         function send(type, extra = {}) {
           if (!socket || socket.readyState !== WebSocket.OPEN) return;
           socket.send(JSON.stringify({
@@ -1666,11 +1770,15 @@
             await playPlayback().catch(() => setPlayerStatus(t("autoplayBlocked")));
           }
           youtubeSample = { time: currentPlaybackTime(), at: performance.now() };
-          window.setTimeout(() => { applyingRemote = false; }, 250);
+          kodikPaused = Boolean(state.is_paused);
+          kodikSample = { time: currentPlaybackTime(), at: performance.now() };
+          window.setTimeout(() => { applyingRemote = false; }, isKodikSource() ? 700 : 250);
         }
 
         if (roomData.source_type === "official_youtube" && roomData.source_reference) {
           attachYouTube(roomData.source_reference);
+        } else if (roomData.source_type === "kodik_embed" && roomData.source_reference) {
+          attachKodik(roomData.source_reference);
         } else if (["licensed_hls", "licensed_mp4"].includes(roomData.source_type) && roomData.source_reference) {
           attachManagedSource(roomData.source_type, roomData.source_reference);
         }
@@ -1742,6 +1850,8 @@
           socket?.close();
           hls?.destroy();
           youtubePlayer?.destroy?.();
+          window.removeEventListener("message", handleKodikMessage);
+          if (kodikMount.src) kodikMount.src = "about:blank";
         });
 
         async function useFile(file) {
