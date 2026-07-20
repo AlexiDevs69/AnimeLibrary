@@ -17,6 +17,15 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+asyncpg://anime:anime@localhost:5432/anime_together"
     redis_url: str = "redis://localhost:6379/0"
     anilist_api_url: str = "https://graphql.anilist.co"
+    anilibria_enabled: bool = True
+    anilibria_api_url: str = "https://anilibria.top/api/v1"
+    anilibria_sync_ttl_seconds: int = 6 * 60 * 60
+    anilibria_max_results: int = 10
+    anilibria_preferred_quality: int = 1080
+    anilibria_hls_host_suffixes: Annotated[list[str], NoDecode] = [
+        "libria.fun",
+        "anilibria.top",
+    ]
     kodik_api_url: str = "https://kodikapi.com"
     kodik_token: str = ""
     kodik_player_origins: Annotated[list[str], NoDecode] = ["https://kodik.info"]
@@ -44,6 +53,47 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
+
+    @field_validator("anilibria_hls_host_suffixes", mode="before")
+    @classmethod
+    def split_anilibria_hls_host_suffixes(cls, value: object) -> object:
+        if isinstance(value, str):
+            return [suffix.strip().lower() for suffix in value.split(",") if suffix.strip()]
+        return value
+
+    @field_validator("anilibria_api_url")
+    @classmethod
+    def validate_anilibria_api_url(cls, value: str) -> str:
+        cleaned = value.strip().rstrip("/")
+        parsed = urlparse(cleaned)
+        if parsed.scheme != "https" or parsed.hostname != "anilibria.top":
+            raise ValueError("ANILIBRIA_API_URL має бути https://anilibria.top/api/v1")
+        if parsed.path.rstrip("/") != "/api/v1":
+            raise ValueError("ANILIBRIA_API_URL має завершуватися на /api/v1")
+        if parsed.username or parsed.password or parsed.query or parsed.fragment:
+            raise ValueError("ANILIBRIA_API_URL не повинен містити облікові дані або параметри")
+        return cleaned
+
+    @field_validator("anilibria_preferred_quality")
+    @classmethod
+    def validate_anilibria_preferred_quality(cls, value: int) -> int:
+        if value not in {480, 720, 1080}:
+            raise ValueError("ANILIBRIA_PREFERRED_QUALITY має бути 480, 720 або 1080")
+        return value
+
+    @field_validator("anilibria_hls_host_suffixes")
+    @classmethod
+    def validate_anilibria_hls_host_suffixes(cls, values: list[str]) -> list[str]:
+        suffixes: list[str] = []
+        for value in values:
+            suffix = value.strip().lower().lstrip(".").rstrip(".")
+            if not suffix or ":" in suffix or "/" in suffix:
+                raise ValueError("ANILIBRIA_HLS_HOST_SUFFIXES містить некоректний домен")
+            if suffix not in suffixes:
+                suffixes.append(suffix)
+        if not suffixes:
+            raise ValueError("ANILIBRIA_HLS_HOST_SUFFIXES не може бути порожнім")
+        return suffixes
 
     @field_validator("kodik_api_url")
     @classmethod
