@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import crud
+from app.anilibria import AniLibriaError
 from app.anilist import AniListError, fetch_anime
 from app.database import get_db
 from app.kodik import KodikError
@@ -39,15 +40,22 @@ async def anime_detail(
     anime = await crud.get_anime_detail(db, anime_id)
     if anime is None:
         raise HTTPException(status_code=404, detail="Аніме не знайдено")
+    changed = False
     try:
-        if await crud.sync_kodik_releases(db, anime):
-            anime = await crud.get_anime_detail(db, anime_id)
-            if anime is None:
-                raise HTTPException(status_code=404, detail="Аніме не знайдено")
+        changed = await crud.sync_anilibria_sources(db, anime)
+    except AniLibriaError as exc:
+        # The catalog remains usable even when the optional video provider is down.
+        logger.warning("AniLibria sync failed for anime %s: %s", anime_id, exc)
+    try:
+        changed = await crud.sync_kodik_releases(db, anime) or changed
     except KodikError as exc:
         # Kodik is an optional fallback; a provider outage must not break AniList
         # metadata or already cached video sources.
         logger.warning("Kodik sync failed for anime %s: %s", anime_id, exc)
+    if changed:
+        anime = await crud.get_anime_detail(db, anime_id)
+        if anime is None:
+            raise HTTPException(status_code=404, detail="Аніме не знайдено")
 
     base = AnimeOut.model_validate(anime)
     episodes = [
@@ -59,7 +67,13 @@ async def anime_detail(
             duration=episode.duration,
             sources=sorted(
                 [
-                    VideoSourceOut.model_validate(source)
+                    VideoSourceOut(
+                        id=source.id,
+                        source_type=source.source_type,
+                        region=source.region,
+                        language=source.language,
+                        label="AniLibria" if source.source_type == "anilibria_hls" else None,
+                    )
                     for source in episode.sources
                     if source.is_active and source.source_type in crud.MANAGED_SOURCE_TYPES
                 ]
