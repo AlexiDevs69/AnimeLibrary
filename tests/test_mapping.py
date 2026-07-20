@@ -16,6 +16,7 @@ def test_anilist_payload_mapping() -> None:
     payload = anime_payload(
         {
             "id": 16498,
+            "idMal": 16498,
             "title": {"romaji": "Shingeki no Kyojin", "english": "Attack on Titan"},
             "coverImage": {"extraLarge": "poster.jpg", "color": "#123456"},
             "bannerImage": "banner.jpg",
@@ -30,6 +31,7 @@ def test_anilist_payload_mapping() -> None:
     )
 
     assert payload["anilist_id"] == 16498
+    assert payload["mal_id"] == 16498
     assert payload["episodes_count"] == 25
     assert payload["slug"] == "shingeki-no-kyojin-16498"
     assert payload["genres"] == ["Action", "Drama"]
