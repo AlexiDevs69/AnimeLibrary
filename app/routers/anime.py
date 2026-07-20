@@ -37,6 +37,7 @@ async def anime_detail(
     if anime is None:
         raise HTTPException(status_code=404, detail="Аніме не знайдено")
     base = AnimeOut.model_validate(anime)
+    
     episodes = [
         EpisodeOut(
             id=episode.id,
@@ -51,6 +52,14 @@ async def anime_detail(
                     key=lambda item: crud.SOURCE_PRIORITY.get(item.source_type, 9),
                 )
                 if source.is_active and source.source_type in crud.MANAGED_SOURCE_TYPES
+            ] or [
+                # Заглушка, щоб кнопка «Дивитись» працювала через авто-фрейм
+                VideoSourceOut(
+                    id=uuid.uuid4(),
+                    source_type="embed_iframe",
+                    region=None,
+                    language="uk"
+                )
             ],
         )
         for episode in anime.episodes
