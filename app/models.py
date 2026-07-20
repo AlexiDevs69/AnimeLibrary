@@ -61,6 +61,7 @@ class Anime(Base):
     genres: Mapped[list[str]] = mapped_column(JSON, default=list)
     average_score: Mapped[int | None] = mapped_column(Integer)
     anilist_url: Mapped[str | None] = mapped_column(String(1000))
+    anilibria_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     kodik_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     cached_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
