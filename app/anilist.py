@@ -12,6 +12,7 @@ query AnimeSearch($search: String, $page: Int!, $perPage: Int!, $sort: [MediaSor
   Page(page: $page, perPage: $perPage) {
     media(type: ANIME, search: $search, sort: $sort, isAdult: false) {
       id
+      idMal
       title { romaji english native }
       description(asHtml: false)
       coverImage { extraLarge large color }
@@ -33,6 +34,7 @@ ANIME_BY_ID_QUERY = """
 query AnimeById($id: Int!) {
   Media(id: $id, type: ANIME, isAdult: false) {
     id
+    idMal
     title { romaji english native }
     description(asHtml: false)
     coverImage { extraLarge large color }
