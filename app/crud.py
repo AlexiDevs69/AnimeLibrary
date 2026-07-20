@@ -17,11 +17,12 @@ from app.schemas import AnimeOut, RoomCreate, RoomOut
 
 
 INVITE_ALPHABET = string.ascii_uppercase + string.digits
-MANAGED_SOURCE_TYPES = ("licensed_hls", "licensed_mp4", "official_youtube")
+MANAGED_SOURCE_TYPES = ("licensed_hls", "licensed_mp4", "official_youtube", "embed_iframe")
 SOURCE_PRIORITY = {
     "licensed_hls": 0,
     "licensed_mp4": 1,
     "official_youtube": 2,
+    "embed_iframe": 3,
 }
 NON_EPISODE_WORDS = (
     "trailer",
@@ -254,11 +255,32 @@ async def resolve_video_source(
             (VideoSource.source_type == "licensed_hls", 0),
             (VideoSource.source_type == "licensed_mp4", 1),
             (VideoSource.source_type == "official_youtube", 2),
+            (VideoSource.source_type == "embed_iframe", 3),
             else_=9,
         ),
         VideoSource.created_at.asc(),
     ).limit(1)
-    return (await db.execute(query)).scalar_one_or_none()
+    
+    source = (await db.execute(query)).scalar_one_or_none()
+    
+    # Автогенерація джерела Kodik, якщо в базі немає інших файлів
+    if source is None and (source_type == "auto" or source_type == "embed_iframe"):
+        anime = await db.get(Anime, anime_id)
+        if anime:
+            ep_res = await db.execute(
+                select(Episode).where(Episode.anime_id == anime_id, Episode.number == episode_number)
+            )
+            episode = ep_res.scalar_one_or_none()
+            if episode:
+                kodik_url = f"https://kodik.info/serial/{anime.anilist_id}/iframe?episode={episode_number}"
+                return VideoSource(
+                    id=uuid.uuid4(),
+                    episode_id=episode.id,
+                    source_type="embed_iframe",
+                    source_reference=kodik_url,
+                    is_active=True,
+                )
+    return source
 
 
 async def unique_invite_code(db: AsyncSession, length: int = 8) -> str:
