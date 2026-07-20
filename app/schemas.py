@@ -14,10 +14,15 @@ SourceType = Literal[
     "licensed_hls",
     "licensed_mp4",
     "official_youtube",
-    "embed_iframe",  # Наш новий тип
+    "kodik_embed",
 ]
-ManagedSourceType = Literal["licensed_hls", "licensed_mp4", "official_youtube", "embed_iframe"]
-AdminSourceType = Literal["licensed_hls", "licensed_mp4", "embed_iframe"]
+ManagedSourceType = Literal[
+    "licensed_hls",
+    "licensed_mp4",
+    "official_youtube",
+    "kodik_embed",
+]
+AdminSourceType = Literal["licensed_hls", "licensed_mp4"]
 
 
 class AnimeOut(BaseModel):
@@ -48,6 +53,7 @@ class VideoSourceOut(BaseModel):
     source_type: ManagedSourceType
     region: str | None
     language: str | None
+    label: str | None = None
 
 
 class EpisodeOut(BaseModel):
