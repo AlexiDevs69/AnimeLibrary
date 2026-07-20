@@ -45,6 +45,7 @@ class Anime(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     anilist_id: Mapped[int] = mapped_column(Integer, unique=True, index=True)
+    mal_id: Mapped[int | None] = mapped_column(Integer, index=True)
     slug: Mapped[str] = mapped_column(String(180), unique=True, index=True)
     title_romaji: Mapped[str] = mapped_column(String(300))
     title_english: Mapped[str | None] = mapped_column(String(300))
@@ -60,11 +61,15 @@ class Anime(Base):
     genres: Mapped[list[str]] = mapped_column(JSON, default=list)
     average_score: Mapped[int | None] = mapped_column(Integer)
     anilist_url: Mapped[str | None] = mapped_column(String(1000))
+    kodik_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     cached_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
     )
 
     episodes: Mapped[list[Episode]] = relationship(
+        back_populates="anime", cascade="all, delete-orphan"
+    )
+    kodik_releases: Mapped[list[KodikRelease]] = relationship(
         back_populates="anime", cascade="all, delete-orphan"
     )
 
@@ -106,6 +111,36 @@ class VideoSource(Base):
     )
 
     episode: Mapped[Episode] = relationship(back_populates="sources")
+
+
+class KodikRelease(Base):
+    __tablename__ = "kodik_releases"
+    __table_args__ = (
+        UniqueConstraint("anime_id", "provider_key", name="uq_kodik_release_anime_key"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    anime_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("anime.id", ondelete="CASCADE"), index=True
+    )
+    provider_key: Mapped[str] = mapped_column(String(300))
+    provider_id: Mapped[str] = mapped_column(String(200))
+    player_link: Mapped[str] = mapped_column(String(2000))
+    content_type: Mapped[str] = mapped_column(String(32))
+    season_number: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    episodes_count: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    translation_id: Mapped[int | None] = mapped_column(Integer)
+    translation_title: Mapped[str | None] = mapped_column(String(200))
+    translation_type: Mapped[str | None] = mapped_column(String(40))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+    anime: Mapped[Anime] = relationship(back_populates="kodik_releases")
 
 
 class WatchRoom(Base):
