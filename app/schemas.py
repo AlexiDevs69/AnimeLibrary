@@ -14,12 +14,14 @@ SourceType = Literal[
     "licensed_hls",
     "licensed_mp4",
     "official_youtube",
+    "anilibria_hls",
     "kodik_embed",
 ]
 ManagedSourceType = Literal[
     "licensed_hls",
     "licensed_mp4",
     "official_youtube",
+    "anilibria_hls",
     "kodik_embed",
 ]
 AdminSourceType = Literal["licensed_hls", "licensed_mp4"]
