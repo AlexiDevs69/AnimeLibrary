@@ -1,0 +1,1 @@
+"""Anime Together backend package."""
