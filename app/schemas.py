@@ -14,9 +14,10 @@ SourceType = Literal[
     "licensed_hls",
     "licensed_mp4",
     "official_youtube",
+    "embed_iframe",  # Наш новий тип
 ]
-ManagedSourceType = Literal["licensed_hls", "licensed_mp4", "official_youtube"]
-AdminSourceType = Literal["licensed_hls", "licensed_mp4"]
+ManagedSourceType = Literal["licensed_hls", "licensed_mp4", "official_youtube", "embed_iframe"]
+AdminSourceType = Literal["licensed_hls", "licensed_mp4", "embed_iframe"]
 
 
 class AnimeOut(BaseModel):
