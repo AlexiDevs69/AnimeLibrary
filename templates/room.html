@@ -1779,7 +1779,7 @@
           attachYouTube(roomData.source_reference);
         } else if (roomData.source_type === "kodik_embed" && roomData.source_reference) {
           attachKodik(roomData.source_reference);
-        } else if (["licensed_hls", "licensed_mp4"].includes(roomData.source_type) && roomData.source_reference) {
+        } else if (["licensed_hls", "anilibria_hls", "licensed_mp4"].includes(roomData.source_type) && roomData.source_reference) {
           attachManagedSource(roomData.source_type, roomData.source_reference);
         }
 
@@ -1882,7 +1882,7 @@
         });
         player.addEventListener("loadedmetadata", async () => {
           const expectedMinutes = Number(roomData?.anime?.episode_duration || 0);
-          const isManaged = ["licensed_hls", "licensed_mp4"].includes(roomData?.source_type);
+          const isManaged = ["licensed_hls", "anilibria_hls", "licensed_mp4"].includes(roomData?.source_type);
           if (isManaged && expectedMinutes >= 10 && Number.isFinite(player.duration) && player.duration < expectedMinutes * 60 * 0.6) {
             player.pause();
             rejectedShortSource = true;
@@ -1897,7 +1897,7 @@
           if (pendingState) await applyState(pendingState);
         });
         player.addEventListener("error", () => {
-          if (!rejectedShortSource && ["licensed_hls", "licensed_mp4"].includes(roomData?.source_type)) setPlayerStatus(t("videoLoadFailed"), "error");
+          if (!rejectedShortSource && ["licensed_hls", "anilibria_hls", "licensed_mp4"].includes(roomData?.source_type)) setPlayerStatus(t("videoLoadFailed"), "error");
         });
         player.addEventListener("play", () => { if (!applyingRemote) send("play"); });
         player.addEventListener("pause", () => { if (!applyingRemote) send("pause"); });
