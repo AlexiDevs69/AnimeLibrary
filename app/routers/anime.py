@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import crud
 from app.anilist import AniListError, fetch_anime
 from app.database import get_db
-from app.schemas import AnimeDetailOut, AnimeOut
+from app.schemas import AnimeDetailOut, AnimeOut, EpisodeOut, VideoSourceOut
 
 
 router = APIRouter(prefix="/api/anime", tags=["anime"])
@@ -36,5 +36,23 @@ async def anime_detail(
     anime = await crud.get_anime_detail(db, anime_id)
     if anime is None:
         raise HTTPException(status_code=404, detail="Аніме не знайдено")
-    return AnimeDetailOut.model_validate(anime)
-
+    base = AnimeOut.model_validate(anime)
+    episodes = [
+        EpisodeOut(
+            id=episode.id,
+            number=episode.number,
+            title=episode.title,
+            thumbnail_url=episode.thumbnail_url,
+            duration=episode.duration,
+            sources=[
+                VideoSourceOut.model_validate(source)
+                for source in sorted(
+                    episode.sources,
+                    key=lambda item: crud.SOURCE_PRIORITY.get(item.source_type, 9),
+                )
+                if source.is_active and source.source_type in crud.MANAGED_SOURCE_TYPES
+            ],
+        )
+        for episode in anime.episodes
+    ]
+    return AnimeDetailOut(**base.model_dump(), episodes=episodes)
