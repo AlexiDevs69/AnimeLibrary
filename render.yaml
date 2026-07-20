@@ -23,6 +23,32 @@ services:
         value: "false"
       - key: ANILIST_API_URL
         value: https://graphql.anilist.co
+      - key: ANILIBRIA_ENABLED
+        value: "true"
+      - key: ANILIBRIA_API_URL
+        value: https://anilibria.top/api/v1
+      - key: ANILIBRIA_SYNC_TTL_SECONDS
+        value: "21600"
+      - key: ANILIBRIA_MAX_RESULTS
+        value: "10"
+      - key: ANILIBRIA_PREFERRED_QUALITY
+        value: "1080"
+      - key: ANILIBRIA_HLS_HOST_SUFFIXES
+        value: libria.fun,anilibria.top
+      - key: KODIK_API_URL
+        value: https://kodikapi.com
+      - key: KODIK_TOKEN
+        sync: false
+      - key: KODIK_PLAYER_ORIGINS
+        value: https://kodik.info
+      - key: KODIK_SYNC_TTL_SECONDS
+        value: "21600"
+      - key: KODIK_MAX_TRANSLATIONS
+        value: "8"
+      - key: APP_NAME
+        value: AnimeLibrary
+      - key: ADMIN_API_KEY
+        sync: false
 
   - type: keyvalue
     name: anime-library-cache
@@ -39,4 +65,3 @@ databases:
     databaseName: anime_library
     user: anime_library
     ipAllowList: []
-
