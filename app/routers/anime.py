@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -6,10 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import crud
 from app.anilist import AniListError, fetch_anime
 from app.database import get_db
+from app.kodik import KodikError
 from app.schemas import AnimeDetailOut, AnimeOut, EpisodeOut, VideoSourceOut
 
 
 router = APIRouter(prefix="/api/anime", tags=["anime"])
+logger = logging.getLogger(__name__)
 
 
 @router.get("/search", response_model=list[AnimeOut])
@@ -36,8 +39,17 @@ async def anime_detail(
     anime = await crud.get_anime_detail(db, anime_id)
     if anime is None:
         raise HTTPException(status_code=404, detail="Аніме не знайдено")
+    try:
+        if await crud.sync_kodik_releases(db, anime):
+            anime = await crud.get_anime_detail(db, anime_id)
+            if anime is None:
+                raise HTTPException(status_code=404, detail="Аніме не знайдено")
+    except KodikError as exc:
+        # Kodik is an optional fallback; a provider outage must not break AniList
+        # metadata or already cached video sources.
+        logger.warning("Kodik sync failed for anime %s: %s", anime_id, exc)
+
     base = AnimeOut.model_validate(anime)
-    
     episodes = [
         EpisodeOut(
             id=episode.id,
@@ -45,22 +57,25 @@ async def anime_detail(
             title=episode.title,
             thumbnail_url=episode.thumbnail_url,
             duration=episode.duration,
-            sources=[
-                VideoSourceOut.model_validate(source)
-                for source in sorted(
-                    episode.sources,
-                    key=lambda item: crud.SOURCE_PRIORITY.get(item.source_type, 9),
-                )
-                if source.is_active and source.source_type in crud.MANAGED_SOURCE_TYPES
-            ] or [
-                # Заглушка, щоб кнопка «Дивитись» працювала через авто-фрейм
-                VideoSourceOut(
-                    id=uuid.uuid4(),
-                    source_type="embed_iframe",
-                    region=None,
-                    language="uk"
-                )
-            ],
+            sources=sorted(
+                [
+                    VideoSourceOut.model_validate(source)
+                    for source in episode.sources
+                    if source.is_active and source.source_type in crud.MANAGED_SOURCE_TYPES
+                ]
+                + [
+                    VideoSourceOut(
+                        id=release.id,
+                        source_type="kodik_embed",
+                        region=None,
+                        language=None,
+                        label=release.translation_title or "Kodik",
+                    )
+                    for release in anime.kodik_releases
+                    if release.is_active and episode.number <= release.episodes_count
+                ],
+                key=lambda item: crud.SOURCE_PRIORITY.get(item.source_type, 9),
+            ),
         )
         for episode in anime.episodes
     ]
