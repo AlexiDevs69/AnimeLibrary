@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Кімната {{ invite_code }} · {{ app_name }}</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body data-page="room" data-room-code="{{ invite_code }}">
+    <header class="site-header">
+      <a class="brand" href="/">
+        <span class="brand-mark">A</span>
+        <span>{{ app_name }}</span>
+      </a>
+      <div class="room-code-box">
+        <span>Код кімнати</span>
+        <strong id="room-code">{{ invite_code }}</strong>
+        <button class="icon-button" id="copy-room-link" type="button" title="Копіювати посилання">⧉</button>
+      </div>
+    </header>
+
+    <main class="room-layout">
+      <section class="watch-column">
+        <div class="player-shell">
+          <video id="watch-player" controls playsinline></video>
+          <label class="file-drop" id="file-drop" for="video-file">
+            <span class="file-icon">＋</span>
+            <strong>Вибрати свою серію</strong>
+            <span>MP4 або WebM. Файл не завантажується на сервер.</span>
+            <input id="video-file" type="file" accept="video/mp4,video/webm,video/*,.mkv">
+          </label>
+        </div>
+
+        <div class="watch-meta">
+          <div>
+            <span class="eyebrow" id="room-episode">Серія 1</span>
+            <h1 id="room-anime-title">Завантаження кімнати…</h1>
+          </div>
+          <span class="connection-badge" id="connection-status">Підключення…</span>
+        </div>
+        <div class="notice" id="file-status">Усі учасники мають вибрати однаковий файл серії.</div>
+      </section>
+
+      <aside class="chat-panel">
+        <div class="chat-heading">
+          <div>
+            <span class="eyebrow">Watch party</span>
+            <h2>Чат кімнати</h2>
+          </div>
+          <span class="online-dot" title="Онлайн"></span>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+          <div class="system-message">Підключаємося до кімнати…</div>
+        </div>
+        <form class="chat-form" id="chat-form">
+          <input id="chat-input" type="text" maxlength="2000" placeholder="Написати повідомлення…" autocomplete="off">
+          <button class="primary-button" type="submit">Надіслати</button>
+        </form>
+      </aside>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
+
