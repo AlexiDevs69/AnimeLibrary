@@ -5,6 +5,7 @@ import secrets
 import string
 import unicodedata
 import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
@@ -12,17 +13,20 @@ from sqlalchemy import case, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.models import Anime, Episode, RoomMember, User, VideoSource, WatchRoom
+from app.config import settings
+from app.kodik import build_player_url, candidates_from_results, search_by_mal_id
+from app.models import Anime, Episode, KodikRelease, RoomMember, User, VideoSource, WatchRoom
 from app.schemas import AnimeOut, RoomCreate, RoomOut
 
 
 INVITE_ALPHABET = string.ascii_uppercase + string.digits
-MANAGED_SOURCE_TYPES = ("licensed_hls", "licensed_mp4", "official_youtube", "embed_iframe")
+STORED_VIDEO_SOURCE_TYPES = ("licensed_hls", "licensed_mp4", "official_youtube")
+MANAGED_SOURCE_TYPES = (*STORED_VIDEO_SOURCE_TYPES, "kodik_embed")
 SOURCE_PRIORITY = {
     "licensed_hls": 0,
     "licensed_mp4": 1,
-    "official_youtube": 2,
-    "embed_iframe": 3,
+    "kodik_embed": 2,
+    "official_youtube": 3,
 }
 NON_EPISODE_WORDS = (
     "trailer",
@@ -99,6 +103,7 @@ def anime_payload(item: dict[str, Any]) -> dict[str, Any]:
     romaji = titles.get("romaji") or titles.get("english") or f"Anime {item['id']}"
     return {
         "anilist_id": item["id"],
+        "mal_id": item.get("idMal"),
         "slug": make_slug(romaji, item["id"]),
         "title_romaji": romaji,
         "title_english": titles.get("english"),
@@ -219,13 +224,79 @@ async def cache_anime_batch(
 async def get_anime_detail(db: AsyncSession, anime_id: uuid.UUID) -> Anime | None:
     result = await db.execute(
         select(Anime)
-        .options(selectinload(Anime.episodes).selectinload(Episode.sources))
+        .options(
+            selectinload(Anime.episodes).selectinload(Episode.sources),
+            selectinload(Anime.kodik_releases),
+        )
         .where(Anime.id == anime_id)
     )
     anime = result.scalar_one_or_none()
     if anime is not None:
         anime.episodes.sort(key=lambda episode: episode.number)
     return anime
+
+
+def kodik_sync_is_due(anime: Anime) -> bool:
+    if not settings.kodik_token or anime.mal_id is None:
+        return False
+    if anime.kodik_synced_at is None:
+        return True
+    synced_at = anime.kodik_synced_at
+    if synced_at.tzinfo is None:
+        synced_at = synced_at.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) - synced_at >= timedelta(
+        seconds=max(300, settings.kodik_sync_ttl_seconds)
+    )
+
+
+async def sync_kodik_releases(db: AsyncSession, anime: Anime) -> bool:
+    if not kodik_sync_is_due(anime) or anime.mal_id is None:
+        return False
+
+    results = await search_by_mal_id(anime.mal_id)
+    candidates = candidates_from_results(
+        results,
+        titles=(anime.title_english, anime.title_romaji, anime.title_native),
+        anime_episodes_count=anime.episodes_count,
+    )
+
+    existing_result = await db.execute(
+        select(KodikRelease).where(KodikRelease.anime_id == anime.id)
+    )
+    existing = {release.provider_key: release for release in existing_result.scalars()}
+    active_keys: set[str] = set()
+    for candidate in candidates:
+        active_keys.add(candidate.provider_key)
+        values = {
+            "provider_id": candidate.provider_id,
+            "player_link": candidate.player_link,
+            "content_type": candidate.content_type,
+            "season_number": candidate.season_number,
+            "episodes_count": candidate.episodes_count,
+            "translation_id": candidate.translation_id,
+            "translation_title": candidate.translation_title,
+            "translation_type": candidate.translation_type,
+            "is_active": True,
+        }
+        release = existing.get(candidate.provider_key)
+        if release is None:
+            db.add(
+                KodikRelease(
+                    anime_id=anime.id,
+                    provider_key=candidate.provider_key,
+                    **values,
+                )
+            )
+        else:
+            for field, value in values.items():
+                setattr(release, field, value)
+
+    for provider_key, release in existing.items():
+        if provider_key not in active_keys:
+            release.is_active = False
+    anime.kodik_synced_at = datetime.now(timezone.utc)
+    await db.commit()
+    return True
 
 
 async def resolve_video_source(
@@ -243,44 +314,83 @@ async def resolve_video_source(
             Episode.anime_id == anime_id,
             Episode.number == episode_number,
             VideoSource.is_active.is_(True),
-            VideoSource.source_type.in_(MANAGED_SOURCE_TYPES),
+            VideoSource.source_type.in_(STORED_VIDEO_SOURCE_TYPES),
         )
     )
     if source_id is not None:
         query = query.where(VideoSource.id == source_id)
-    elif source_type in MANAGED_SOURCE_TYPES:
+    elif source_type in STORED_VIDEO_SOURCE_TYPES:
         query = query.where(VideoSource.source_type == source_type)
     query = query.order_by(
         case(
             (VideoSource.source_type == "licensed_hls", 0),
             (VideoSource.source_type == "licensed_mp4", 1),
-            (VideoSource.source_type == "official_youtube", 2),
-            (VideoSource.source_type == "embed_iframe", 3),
+            (VideoSource.source_type == "official_youtube", 3),
             else_=9,
         ),
         VideoSource.created_at.asc(),
     ).limit(1)
-    
-    source = (await db.execute(query)).scalar_one_or_none()
-    
-    # Автогенерація джерела Kodik, якщо в базі немає інших файлів
-    if source is None and (source_type == "auto" or source_type == "embed_iframe"):
-        anime = await db.get(Anime, anime_id)
-        if anime:
-            ep_res = await db.execute(
-                select(Episode).where(Episode.anime_id == anime_id, Episode.number == episode_number)
-            )
-            episode = ep_res.scalar_one_or_none()
-            if episode:
-                kodik_url = f"https://kodik.info/serial/{anime.anilist_id}/iframe?episode={episode_number}"
-                return VideoSource(
-                    id=uuid.uuid4(),
-                    episode_id=episode.id,
-                    source_type="embed_iframe",
-                    source_reference=kodik_url,
-                    is_active=True,
+    return (await db.execute(query)).scalar_one_or_none()
+
+
+async def resolve_kodik_release(
+    db: AsyncSession,
+    *,
+    anime_id: uuid.UUID,
+    episode_number: int,
+    source_id: uuid.UUID | None,
+) -> KodikRelease | None:
+    query = select(KodikRelease).where(
+        KodikRelease.anime_id == anime_id,
+        KodikRelease.is_active.is_(True),
+        KodikRelease.episodes_count >= episode_number,
+    )
+    if source_id is not None:
+        query = query.where(KodikRelease.id == source_id)
+    query = query.order_by(KodikRelease.created_at.asc()).limit(1)
+    return (await db.execute(query)).scalar_one_or_none()
+
+
+async def resolve_room_source(
+    db: AsyncSession,
+    *,
+    anime_id: uuid.UUID,
+    episode_number: int,
+    source_id: uuid.UUID | None,
+    source_type: str,
+) -> tuple[str, str] | None:
+    stored_source = None
+    if source_type != "kodik_embed":
+        stored_source = await resolve_video_source(
+            db,
+            anime_id=anime_id,
+            episode_number=episode_number,
+            source_id=source_id,
+            source_type=source_type,
+        )
+    if stored_source is not None:
+        return stored_source.source_type, stored_source.source_reference
+
+    if source_type in {"auto", "kodik_embed"}:
+        release = await resolve_kodik_release(
+            db,
+            anime_id=anime_id,
+            episode_number=episode_number,
+            source_id=source_id,
+        )
+        if release is not None:
+            try:
+                player_url = build_player_url(
+                    release.player_link,
+                    content_type=release.content_type,
+                    season_number=release.season_number,
+                    episode_number=episode_number,
+                    translation_id=release.translation_id,
                 )
-    return source
+            except ValueError:
+                return None
+            return "kodik_embed", player_url
+    return None
 
 
 async def unique_invite_code(db: AsyncSession, length: int = 8) -> str:
@@ -298,11 +408,11 @@ async def create_room(db: AsyncSession, data: RoomCreate) -> tuple[WatchRoom, Us
         if anime is None:
             raise LookupError("Аніме не знайдено")
 
-    resolved_source: VideoSource | None = None
+    resolved_source: tuple[str, str] | None = None
     if data.source_type != "local_file":
         if data.anime_id is None:
             raise SourceUnavailableError("Спочатку виберіть аніме та серію")
-        resolved_source = await resolve_video_source(
+        resolved_source = await resolve_room_source(
             db,
             anime_id=data.anime_id,
             episode_number=data.episode_number,
@@ -321,9 +431,9 @@ async def create_room(db: AsyncSession, data: RoomCreate) -> tuple[WatchRoom, Us
         host_id=host.id,
         anime_id=data.anime_id,
         episode_number=data.episode_number,
-        source_type=resolved_source.source_type if resolved_source else "local_file",
+        source_type=resolved_source[0] if resolved_source else "local_file",
         source_reference=(
-            resolved_source.source_reference if resolved_source else data.source_reference
+            resolved_source[1] if resolved_source else data.source_reference
         ),
         file_hash=data.file_hash if resolved_source is None else None,
         is_public=data.is_public,
