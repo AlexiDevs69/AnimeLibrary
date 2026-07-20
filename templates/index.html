@@ -1341,8 +1341,10 @@
       function sourceOptionLabel(source) {
         const kind = source.source_type === "licensed_hls"
           ? "HLS"
-          : source.source_type === "official_youtube" ? "YouTube · official" : "MP4";
-        return [source.language?.toUpperCase(), source.region?.toUpperCase(), kind].filter(Boolean).join(" · ");
+          : source.source_type === "official_youtube"
+            ? "YouTube · official"
+            : source.source_type === "kodik_embed" ? "Kodik" : "MP4";
+        return [source.label, source.language?.toUpperCase(), source.region?.toUpperCase(), kind].filter(Boolean).join(" · ");
       }
 
       function refreshSourceOptions() {
