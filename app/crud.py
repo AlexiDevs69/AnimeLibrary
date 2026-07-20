@@ -13,6 +13,7 @@ from sqlalchemy import case, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.anilibria import fetch_release_episodes
 from app.config import settings
 from app.kodik import build_player_url, candidates_from_results, search_by_mal_id
 from app.models import Anime, Episode, KodikRelease, RoomMember, User, VideoSource, WatchRoom
@@ -20,13 +21,19 @@ from app.schemas import AnimeOut, RoomCreate, RoomOut
 
 
 INVITE_ALPHABET = string.ascii_uppercase + string.digits
-STORED_VIDEO_SOURCE_TYPES = ("licensed_hls", "licensed_mp4", "official_youtube")
+STORED_VIDEO_SOURCE_TYPES = (
+    "licensed_hls",
+    "anilibria_hls",
+    "licensed_mp4",
+    "official_youtube",
+)
 MANAGED_SOURCE_TYPES = (*STORED_VIDEO_SOURCE_TYPES, "kodik_embed")
 SOURCE_PRIORITY = {
     "licensed_hls": 0,
-    "licensed_mp4": 1,
-    "kodik_embed": 2,
-    "official_youtube": 3,
+    "anilibria_hls": 1,
+    "licensed_mp4": 2,
+    "kodik_embed": 3,
+    "official_youtube": 4,
 }
 NON_EPISODE_WORDS = (
     "trailer",
@@ -236,6 +243,96 @@ async def get_anime_detail(db: AsyncSession, anime_id: uuid.UUID) -> Anime | Non
     return anime
 
 
+def anilibria_sync_is_due(anime: Anime) -> bool:
+    if not settings.anilibria_enabled:
+        return False
+    if anime.anilibria_synced_at is None:
+        return True
+    synced_at = anime.anilibria_synced_at
+    if synced_at.tzinfo is None:
+        synced_at = synced_at.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) - synced_at >= timedelta(
+        seconds=max(300, settings.anilibria_sync_ttl_seconds)
+    )
+
+
+async def sync_anilibria_sources(db: AsyncSession, anime: Anime) -> bool:
+    if not anilibria_sync_is_due(anime):
+        return False
+
+    provider_episodes = await fetch_release_episodes(
+        titles=(anime.title_english, anime.title_romaji, anime.title_native),
+        year=anime.year,
+    )
+    episode_result = await db.execute(
+        select(Episode).where(Episode.anime_id == anime.id)
+    )
+    episodes_by_number = {episode.number: episode for episode in episode_result.scalars()}
+    for provider_episode in provider_episodes:
+        episode = episodes_by_number.get(provider_episode.number)
+        if episode is None:
+            episode = Episode(
+                anime_id=anime.id,
+                number=provider_episode.number,
+                title=provider_episode.title,
+                duration=provider_episode.duration_minutes or anime.episode_duration,
+            )
+            db.add(episode)
+            episodes_by_number[provider_episode.number] = episode
+        else:
+            if provider_episode.title and not episode.title:
+                episode.title = provider_episode.title
+            if provider_episode.duration_minutes and not episode.duration:
+                episode.duration = provider_episode.duration_minutes
+    await db.flush()
+
+    source_result = await db.execute(
+        select(VideoSource, Episode.number)
+        .join(Episode, Episode.id == VideoSource.episode_id)
+        .where(
+            Episode.anime_id == anime.id,
+            VideoSource.source_type == "anilibria_hls",
+        )
+    )
+    existing_sources: dict[int, list[VideoSource]] = {}
+    for source, episode_number in source_result.tuples():
+        existing_sources.setdefault(episode_number, []).append(source)
+
+    active_numbers: set[int] = set()
+    for provider_episode in provider_episodes:
+        active_numbers.add(provider_episode.number)
+        episode = episodes_by_number[provider_episode.number]
+        matches = existing_sources.get(provider_episode.number, [])
+        if matches:
+            source = matches[0]
+            source.source_reference = provider_episode.stream_url
+            source.language = "ru"
+            source.region = None
+            source.is_active = True
+            for duplicate in matches[1:]:
+                duplicate.is_active = False
+        else:
+            db.add(
+                VideoSource(
+                    episode_id=episode.id,
+                    source_type="anilibria_hls",
+                    source_reference=provider_episode.stream_url,
+                    language="ru",
+                    region=None,
+                    is_active=True,
+                )
+            )
+
+    for episode_number, sources in existing_sources.items():
+        if episode_number not in active_numbers:
+            for source in sources:
+                source.is_active = False
+
+    anime.anilibria_synced_at = datetime.now(timezone.utc)
+    await db.commit()
+    return True
+
+
 def kodik_sync_is_due(anime: Anime) -> bool:
     if not settings.kodik_token or anime.mal_id is None:
         return False
@@ -324,8 +421,9 @@ async def resolve_video_source(
     query = query.order_by(
         case(
             (VideoSource.source_type == "licensed_hls", 0),
-            (VideoSource.source_type == "licensed_mp4", 1),
-            (VideoSource.source_type == "official_youtube", 3),
+            (VideoSource.source_type == "anilibria_hls", 1),
+            (VideoSource.source_type == "licensed_mp4", 2),
+            (VideoSource.source_type == "official_youtube", 4),
             else_=9,
         ),
         VideoSource.created_at.asc(),
