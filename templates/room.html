@@ -537,7 +537,8 @@
       .connection-badge.connected { color: var(--green); border-color: rgba(65, 217, 138, .18); background: rgba(65, 217, 138, .06); }
       .connection-badge.error { color: var(--red); }
       .player-shell { position: relative; aspect-ratio: 16 / 9; background: #030304; }
-      .player-shell video { width: 100%; height: 100%; display: block; background: #030304; }
+      .player-shell video, .player-shell iframe, .youtube-player { width: 100%; height: 100%; display: block; border: 0; background: #030304; }
+      .youtube-player { position: absolute; inset: 0; }
       .file-drop {
         position: absolute;
         inset: 0;
@@ -868,6 +869,7 @@
 
           <div class="player-shell">
             <video id="watch-player" controls playsinline preload="metadata"></video>
+            <div class="youtube-player" id="youtube-player" hidden></div>
             <label class="file-drop" id="file-drop" for="video-file">
               <span class="upload-orb">
                 <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 16V5m0 0L8 9m4-4 4 4M5 15v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -945,6 +947,7 @@
     </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.16/dist/hls.min.js" crossorigin="anonymous"></script>
     <script>
       const page = document.body.dataset.page;
       const toast = document.querySelector("#toast");
@@ -969,6 +972,8 @@
           roomNotFound: "Кімнату не знайдено", chooseEpisode: "Вибрати файл серії", chooseEpisodeText: "MP4, WebM або MKV. Файл залишиться тільки на вашому пристрої.", neverUploaded: "Не завантажується на сервер",
           episodeOne: "Серія 1", episodeNumber: "Серія {count}", loadingRoom: "Завантаження кімнати…", sharedWatch: "Спільний перегляд", syncActive: "Синхронізація активна", syncActiveText: "Пауза й перемотування для всіх",
           sameFileNotice: "Усі учасники мають вибрати однаковий файл серії.", selectedInRoom: "У кімнаті вибрано: {name}", checkingFile: "Перевіряємо файл…", fileMatches: "Файл збігається: {name}", episodeReady: "серія готова",
+          managedEpisodeReady: "Повна серія готова — нічого завантажувати не потрібно.", loadingVideo: "Готуємо повну серію…", videoLoadFailed: "Не вдалося відкрити відео. Перевірте URL і CORS сховища.", videoTooShort: "Це джерело схоже на уривок, тому відтворення зупинено.",
+          officialEpisodeReady: "Офіційна повна серія готова до перегляду.", youtubeUnavailable: "Офіційна серія недоступна у вашому регіоні або заборонена для вбудовування.",
           autoplayBlocked: "Браузер заблокував автозапуск — натисніть Play один раз.", roomCommunication: "Спілкування", roomChat: "Чат кімнати", online: "Онлайн", connectingToRoom: "Підключаємося до кімнати…",
           messagePlaceholder: "Написати повідомлення…", send: "Надіслати", privateRoom: "Приватна кімната за посиланням", almostReady: "Майже готово", introduceYourself: "Як вас показувати в кімнаті?",
           introduceText: "Це ім’я бачитимуть інші учасники в чаті.", joinWatch: "Приєднатися до перегляду", connectedMessage: "Ви підключилися до кімнати.", memberJoined: "{name} приєднався(-лась).", memberLeft: "{name} вийшов(-ла).",
@@ -993,6 +998,8 @@
           roomNotFound: "Room not found", chooseEpisode: "Choose episode file", chooseEpisodeText: "MP4, WebM, or MKV. The file stays only on your device.", neverUploaded: "Never uploaded to the server",
           episodeOne: "Episode 1", episodeNumber: "Episode {count}", loadingRoom: "Loading room…", sharedWatch: "Watch together", syncActive: "Sync is active", syncActiveText: "Pause and seeking for everyone",
           sameFileNotice: "All members must choose the same episode file.", selectedInRoom: "Selected in this room: {name}", checkingFile: "Checking file…", fileMatches: "File matches: {name}", episodeReady: "episode ready",
+          managedEpisodeReady: "The full episode is ready — no upload needed.", loadingVideo: "Preparing the full episode…", videoLoadFailed: "Could not open the video. Check the storage URL and CORS.", videoTooShort: "This source looks like a preview, so playback was stopped.",
+          officialEpisodeReady: "The official full episode is ready to watch.", youtubeUnavailable: "The official episode is unavailable in your region or cannot be embedded.",
           autoplayBlocked: "Your browser blocked autoplay — press Play once.", roomCommunication: "Conversation", roomChat: "Room chat", online: "Online", connectingToRoom: "Connecting to the room…",
           messagePlaceholder: "Write a message…", send: "Send", privateRoom: "Private link-only room", almostReady: "Almost ready", introduceYourself: "What should we call you?",
           introduceText: "Other members will see this name in chat.", joinWatch: "Join the watch party", connectedMessage: "You joined the room.", memberJoined: "{name} joined.", memberLeft: "{name} left.",
@@ -1017,6 +1024,8 @@
           roomNotFound: "Комната не найдена", chooseEpisode: "Выбрать файл серии", chooseEpisodeText: "MP4, WebM или MKV. Файл останется только на вашем устройстве.", neverUploaded: "Не загружается на сервер",
           episodeOne: "Серия 1", episodeNumber: "Серия {count}", loadingRoom: "Загрузка комнаты…", sharedWatch: "Совместный просмотр", syncActive: "Синхронизация активна", syncActiveText: "Пауза и перемотка для всех",
           sameFileNotice: "Все участники должны выбрать одинаковый файл серии.", selectedInRoom: "В комнате выбран: {name}", checkingFile: "Проверяем файл…", fileMatches: "Файл совпадает: {name}", episodeReady: "серия готова",
+          managedEpisodeReady: "Полная серия готова — ничего загружать не нужно.", loadingVideo: "Готовим полную серию…", videoLoadFailed: "Не удалось открыть видео. Проверьте URL и CORS хранилища.", videoTooShort: "Этот источник похож на отрывок, поэтому воспроизведение остановлено.",
+          officialEpisodeReady: "Официальная полная серия готова к просмотру.", youtubeUnavailable: "Официальная серия недоступна в вашем регионе или запрещена для встраивания.",
           autoplayBlocked: "Браузер заблокировал автозапуск — нажмите Play один раз.", roomCommunication: "Общение", roomChat: "Чат комнаты", online: "Онлайн", connectingToRoom: "Подключаемся к комнате…",
           messagePlaceholder: "Написать сообщение…", send: "Отправить", privateRoom: "Приватная комната по ссылке", almostReady: "Почти готово", introduceYourself: "Как вас показывать в комнате?",
           introduceText: "Это имя увидят другие участники в чате.", joinWatch: "Присоединиться к просмотру", connectedMessage: "Вы подключились к комнате.", memberJoined: "{name} присоединился(-лась).", memberLeft: "{name} вышел(-ла).",
@@ -1406,6 +1415,7 @@
       async function initRoom() {
         const code = document.body.dataset.roomCode;
         const player = document.querySelector("#watch-player");
+        const youtubeMount = document.querySelector("#youtube-player");
         const fileInput = document.querySelector("#video-file");
         const fileDrop = document.querySelector("#file-drop");
         const fileStatus = document.querySelector("#file-status");
@@ -1416,13 +1426,59 @@
         localStorage.setItem(`room:${code}:name`, name);
 
         let roomData = null;
+        let hls = null;
+        let youtubePlayer = null;
+        let youtubeReady = false;
+        let youtubePoll = null;
+        let youtubeSample = null;
+        let rejectedShortSource = false;
+
+        function setPlayerStatus(message, state = "") {
+          fileStatusText.removeAttribute("data-i18n");
+          fileStatusText.textContent = message;
+          fileStatus.classList.remove("success", "error");
+          if (state) fileStatus.classList.add(state);
+        }
+
+        function attachManagedSource(sourceType, sourceUrl) {
+          fileDrop.classList.add("hidden");
+          setPlayerStatus(t("loadingVideo"));
+          if (sourceType === "licensed_mp4") {
+            player.src = sourceUrl;
+            player.load();
+            return;
+          }
+          if (player.canPlayType("application/vnd.apple.mpegurl")) {
+            player.src = sourceUrl;
+            player.load();
+            return;
+          }
+          if (!window.Hls?.isSupported()) {
+            setPlayerStatus(t("videoLoadFailed"), "error");
+            return;
+          }
+          hls?.destroy();
+          hls = new window.Hls({ enableWorker: true, lowLatencyMode: false });
+          hls.loadSource(sourceUrl);
+          hls.attachMedia(player);
+          hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
+            setPlayerStatus(t("managedEpisodeReady"), "success");
+          });
+          hls.on(window.Hls.Events.ERROR, (_event, data) => {
+            if (!data.fatal) return;
+            setPlayerStatus(t("videoLoadFailed"), "error");
+            if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
+            else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+            else hls.destroy();
+          });
+        }
+
         try {
           roomData = await api(`/api/rooms/${code}`);
           document.querySelector("#room-anime-title").textContent = roomData.anime ? displayTitle(roomData.anime) : t("sharedWatch");
           document.querySelector("#room-episode").textContent = t("episodeNumber", { count: roomData.episode_number });
-          if (roomData.source_reference) {
-            fileStatusText.removeAttribute("data-i18n");
-            fileStatusText.textContent = t("selectedInRoom", { name: roomData.source_reference });
+          if (roomData.source_type === "local_file" && roomData.source_reference) {
+            setPlayerStatus(t("selectedInRoom", { name: roomData.source_reference }));
           }
         } catch (error) {
           showToast(error.message, "error");
@@ -1448,12 +1504,144 @@
         }
         window.addEventListener("languagechange", updateRoomLanguage);
 
+        const isYouTubeSource = () => roomData?.source_type === "official_youtube";
+        const expectedEpisodeSeconds = () => Number(roomData?.anime?.episode_duration || 0) * 60;
+
+        function playbackReady() {
+          return isYouTubeSource() ? youtubeReady : Boolean(player.currentSrc || player.src);
+        }
+
+        function currentPlaybackTime() {
+          return isYouTubeSource() && youtubeReady
+            ? Number(youtubePlayer.getCurrentTime() || 0)
+            : Number(player.currentTime || 0);
+        }
+
+        function currentPlaybackRate() {
+          return isYouTubeSource() && youtubeReady
+            ? Number(youtubePlayer.getPlaybackRate() || 1)
+            : Number(player.playbackRate || 1);
+        }
+
+        function seekPlayback(seconds) {
+          if (isYouTubeSource()) youtubePlayer?.seekTo(Math.max(0, seconds), true);
+          else player.currentTime = Math.max(0, seconds);
+        }
+
+        function setPlaybackRate(rate) {
+          if (isYouTubeSource()) {
+            const available = youtubePlayer?.getAvailablePlaybackRates?.() || [1];
+            youtubePlayer?.setPlaybackRate(available.includes(rate) ? rate : 1);
+          } else {
+            player.playbackRate = rate;
+          }
+        }
+
+        function pausePlayback() {
+          if (isYouTubeSource()) youtubePlayer?.pauseVideo();
+          else player.pause();
+        }
+
+        async function playPlayback() {
+          if (isYouTubeSource()) {
+            youtubePlayer?.playVideo();
+            return;
+          }
+          await player.play();
+        }
+
+        function loadYouTubeApi() {
+          if (window.YT?.Player) return Promise.resolve(window.YT);
+          if (window.__animeLibraryYouTubeApi) return window.__animeLibraryYouTubeApi;
+          window.__animeLibraryYouTubeApi = new Promise((resolve, reject) => {
+            const previousReady = window.onYouTubeIframeAPIReady;
+            window.onYouTubeIframeAPIReady = () => {
+              previousReady?.();
+              resolve(window.YT);
+            };
+            const script = document.createElement("script");
+            script.src = "https://www.youtube.com/iframe_api";
+            script.async = true;
+            script.addEventListener("error", () => reject(new Error(t("youtubeUnavailable"))));
+            document.head.append(script);
+          });
+          return window.__animeLibraryYouTubeApi;
+        }
+
+        function rejectShortYouTube() {
+          rejectedShortSource = true;
+          youtubeReady = false;
+          youtubePlayer?.stopVideo();
+          setPlayerStatus(t("videoTooShort"), "error");
+        }
+
+        async function attachYouTube(videoId) {
+          fileDrop.classList.add("hidden");
+          player.hidden = true;
+          youtubeMount.hidden = false;
+          setPlayerStatus(t("loadingVideo"));
+          try {
+            await loadYouTubeApi();
+            youtubePlayer = new window.YT.Player("youtube-player", {
+              width: "100%",
+              height: "100%",
+              videoId,
+              playerVars: {
+                playsinline: 1,
+                rel: 0,
+                origin: location.origin,
+              },
+              events: {
+                onReady: async (event) => {
+                  const duration = Number(event.target.getDuration() || 0);
+                  const expected = expectedEpisodeSeconds();
+                  if (expected >= 600 && duration > 0 && duration < expected * 0.6) {
+                    rejectShortYouTube();
+                    return;
+                  }
+                  youtubeReady = true;
+                  youtubeSample = { time: currentPlaybackTime(), at: performance.now() };
+                  setPlayerStatus(t("officialEpisodeReady"), "success");
+                  if (pendingState) await applyState(pendingState);
+                },
+                onStateChange: (event) => {
+                  if (!youtubeReady || applyingRemote || rejectedShortSource) return;
+                  if (event.data === window.YT.PlayerState.PLAYING) send("play");
+                  else if (event.data === window.YT.PlayerState.PAUSED) send("pause");
+                  else if (event.data === window.YT.PlayerState.ENDED) send("pause");
+                },
+                onPlaybackRateChange: () => {
+                  if (youtubeReady && !applyingRemote) send("rate");
+                },
+                onAutoplayBlocked: () => setPlayerStatus(t("autoplayBlocked")),
+                onError: () => setPlayerStatus(t("youtubeUnavailable"), "error"),
+              },
+            });
+            youtubePoll = window.setInterval(() => {
+              if (!youtubeReady || rejectedShortSource) return;
+              const now = performance.now();
+              const current = currentPlaybackTime();
+              const state = youtubePlayer.getPlayerState();
+              if (!applyingRemote && youtubeSample) {
+                const elapsed = (now - youtubeSample.at) / 1000;
+                const expected = youtubeSample.time + (
+                  state === window.YT.PlayerState.PLAYING ? elapsed * currentPlaybackRate() : 0
+                );
+                if (Math.abs(current - expected) > 1.25) send("seek");
+              }
+              youtubeSample = { time: current, at: now };
+            }, 750);
+          } catch (error) {
+            setPlayerStatus(error.message || t("youtubeUnavailable"), "error");
+          }
+        }
+
         function send(type, extra = {}) {
           if (!socket || socket.readyState !== WebSocket.OPEN) return;
           socket.send(JSON.stringify({
             type,
-            current_time: player.currentTime || 0,
-            playback_rate: player.playbackRate || 1,
+            current_time: currentPlaybackTime(),
+            playback_rate: currentPlaybackRate(),
             ...extra,
           }));
         }
@@ -1461,7 +1649,7 @@
         async function applyState(state) {
           if (!state || state.state_version < lastVersion) return;
           lastVersion = state.state_version;
-          if (!player.src) {
+          if (!playbackReady()) {
             pendingState = state;
             return;
           }
@@ -1470,17 +1658,21 @@
           const sentAt = Date.parse(state.server_time || new Date().toISOString());
           const elapsed = state.is_paused ? 0 : Math.max(0, (Date.now() - sentAt) / 1000);
           const target = Number(state.current_time || 0) + elapsed * Number(state.playback_rate || 1);
-          if (Math.abs((player.currentTime || 0) - target) > 0.45) player.currentTime = target;
-          player.playbackRate = Number(state.playback_rate || 1);
+          if (Math.abs(currentPlaybackTime() - target) > 0.45) seekPlayback(target);
+          setPlaybackRate(Number(state.playback_rate || 1));
           if (state.is_paused) {
-            player.pause();
+            pausePlayback();
           } else {
-            await player.play().catch(() => {
-              fileStatusText.removeAttribute("data-i18n");
-              fileStatusText.textContent = t("autoplayBlocked");
-            });
+            await playPlayback().catch(() => setPlayerStatus(t("autoplayBlocked")));
           }
-          window.setTimeout(() => { applyingRemote = false; }, 100);
+          youtubeSample = { time: currentPlaybackTime(), at: performance.now() };
+          window.setTimeout(() => { applyingRemote = false; }, 250);
+        }
+
+        if (roomData.source_type === "official_youtube" && roomData.source_reference) {
+          attachYouTube(roomData.source_reference);
+        } else if (["licensed_hls", "licensed_mp4"].includes(roomData.source_type) && roomData.source_reference) {
+          attachManagedSource(roomData.source_type, roomData.source_reference);
         }
 
         async function handleSocketMessage(event) {
@@ -1545,8 +1737,11 @@
         const heartbeat = window.setInterval(() => send("ping", { client_time: new Date().toISOString() }), 25000);
         window.addEventListener("beforeunload", () => {
           window.clearInterval(heartbeat);
+          window.clearInterval(youtubePoll);
           window.clearTimeout(reconnectTimer);
           socket?.close();
+          hls?.destroy();
+          youtubePlayer?.destroy?.();
         });
 
         async function useFile(file) {
@@ -1575,7 +1770,25 @@
           event.preventDefault();
           useFile(event.dataTransfer.files[0]);
         });
-        player.addEventListener("loadedmetadata", async () => { if (pendingState) await applyState(pendingState); });
+        player.addEventListener("loadedmetadata", async () => {
+          const expectedMinutes = Number(roomData?.anime?.episode_duration || 0);
+          const isManaged = ["licensed_hls", "licensed_mp4"].includes(roomData?.source_type);
+          if (isManaged && expectedMinutes >= 10 && Number.isFinite(player.duration) && player.duration < expectedMinutes * 60 * 0.6) {
+            player.pause();
+            rejectedShortSource = true;
+            hls?.destroy();
+            hls = null;
+            player.removeAttribute("src");
+            player.load();
+            setPlayerStatus(t("videoTooShort"), "error");
+            return;
+          }
+          if (isManaged) setPlayerStatus(t("managedEpisodeReady"), "success");
+          if (pendingState) await applyState(pendingState);
+        });
+        player.addEventListener("error", () => {
+          if (!rejectedShortSource && ["licensed_hls", "licensed_mp4"].includes(roomData?.source_type)) setPlayerStatus(t("videoLoadFailed"), "error");
+        });
         player.addEventListener("play", () => { if (!applyingRemote) send("play"); });
         player.addEventListener("pause", () => { if (!applyingRemote) send("pause"); });
         player.addEventListener("seeked", () => { if (!applyingRemote) send("seek"); });
