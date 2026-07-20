@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ app_name }}</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <script src="/static/app.js" defer></script>
+  </head>
+  <body data-page="home">
+    <header class="site-header">
+      <a class="brand" href="/">
+        <span class="brand-mark">A</span>
+        <span>{{ app_name }}</span>
+      </a>
+      <button class="ghost-button" id="join-room-button" type="button">Увійти за кодом</button>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <span class="eyebrow">Дивіться синхронно</span>
+          <h1>Аніме разом, навіть якщо ви в різних містах.</h1>
+          <p>Одна пауза, один таймкод і спільний чат. Відеофайл залишається на вашому пристрої.</p>
+        </div>
+
+        <form class="search-box" id="anime-search-form">
+          <label for="anime-search">Знайти аніме</label>
+          <div class="search-row">
+            <input id="anime-search" name="q" type="search" minlength="2" maxlength="100" placeholder="Наприклад, Attack on Titan">
+            <button class="primary-button" type="submit">Знайти</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="catalog-section">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">Каталог AniList</span>
+            <h2 id="catalog-title">Популярне зараз</h2>
+          </div>
+          <span class="muted" id="catalog-status">Завантаження…</span>
+        </div>
+        <div class="anime-grid" id="anime-grid" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
