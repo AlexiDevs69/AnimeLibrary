@@ -234,6 +234,7 @@ class AccountOut(BaseModel):
     id: uuid.UUID
     username: str
     email: str
+    friend_code: str
     display_name: str
     avatar_url: str | None
     banner_url: str | None
@@ -312,6 +313,63 @@ class PublicAccountOut(BaseModel):
     bio: str | None
     is_profile_private: bool
     created_at: datetime
+
+
+class FriendUserOut(BaseModel):
+    id: uuid.UUID
+    username: str
+    display_name: str
+    avatar_url: str | None
+    friend_code: str
+    is_online: bool = False
+
+
+class FriendEntryOut(BaseModel):
+    friendship_id: uuid.UUID
+    user: FriendUserOut
+    created_at: datetime
+
+
+class FriendRequestOut(FriendEntryOut):
+    direction: Literal["incoming", "outgoing"]
+
+
+class RoomInvitationOut(BaseModel):
+    id: uuid.UUID
+    invite_code: str
+    anime: AnimeOut | None
+    episode_number: int
+    sender: FriendUserOut
+    created_at: datetime
+    expires_at: datetime
+
+
+class FriendsDashboardOut(BaseModel):
+    my_code: str
+    friends: list[FriendEntryOut]
+    incoming: list[FriendRequestOut]
+    outgoing: list[FriendRequestOut]
+    room_invitations: list[RoomInvitationOut]
+
+
+class FriendRequestCreate(BaseModel):
+    code: str = Field(min_length=8, max_length=20)
+
+    @field_validator("code")
+    @classmethod
+    def normalize_code(cls, value: str) -> str:
+        cleaned = value.strip().upper().replace(" ", "")
+        if not re.fullmatch(r"AL-[A-Z0-9]{4}-[A-Z0-9]{4}", cleaned):
+            raise ValueError("Код має формат AL-XXXX-XXXX")
+        return cleaned
+
+
+class RoomInvitationCreate(BaseModel):
+    friend_id: uuid.UUID
+
+
+class RoomInvitationAcceptOut(BaseModel):
+    invite_code: str
 
 
 class ProfileOut(BaseModel):
