@@ -9,7 +9,7 @@ from fastapi.templating import Jinja2Templates
 from app.config import BASE_DIR, settings
 from app.database import Base, engine
 from app.realtime import room_state_cache
-from app.routers import admin, anime, profiles, rooms, ws
+from app.routers import anime, profiles, rooms, ws
 
 
 @asynccontextmanager
@@ -40,7 +40,6 @@ templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
 app.include_router(anime.router)
 app.include_router(rooms.router)
-app.include_router(admin.router)
 app.include_router(profiles.router)
 app.include_router(ws.router)
 
