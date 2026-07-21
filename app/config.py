@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     kodik_sync_ttl_seconds: int = 6 * 60 * 60
     kodik_max_translations: int = 8
     admin_api_key: str = ""
+    session_cookie_name: str = "anime_session"
+    session_cookie_secure: bool = True
+    session_duration_days: int = 30
     cors_origins: list[str] = ["http://localhost:8000", "http://127.0.0.1:8000"]
 
     model_config = SettingsConfigDict(
