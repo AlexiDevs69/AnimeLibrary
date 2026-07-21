@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+import secrets
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile, status
@@ -20,11 +21,26 @@ from app.auth import (
     verify_password,
 )
 from app.database import get_db
-from app.models import Anime, AnimeLibraryEntry, ProfileImage, User, WatchProgress
+from app.models import (
+    Anime,
+    AnimeLibraryEntry,
+    Friendship,
+    ProfileImage,
+    RoomInvitation,
+    RoomMember,
+    User,
+    WatchRoom,
+    WatchProgress,
+)
 from app.profile_images import MAX_UPLOAD_BYTES, ProfileImageError, process_profile_image
 from app.schemas import (
     AccountOut,
     AnimeOut,
+    FriendEntryOut,
+    FriendRequestCreate,
+    FriendRequestOut,
+    FriendsDashboardOut,
+    FriendUserOut,
     LibraryEntryIn,
     LoginIn,
     ProfileAnimeOut,
@@ -34,10 +50,21 @@ from app.schemas import (
     ProgressIn,
     PublicAccountOut,
     RegisterIn,
+    RoomInvitationOut,
 )
 
 
 router = APIRouter(tags=["profiles"])
+FRIEND_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
+
+async def unique_friend_code(db: AsyncSession) -> str:
+    for _ in range(20):
+        token = "".join(secrets.choice(FRIEND_CODE_ALPHABET) for _ in range(8))
+        code = f"AL-{token[:4]}-{token[4:]}"
+        if await db.scalar(select(User.id).where(User.friend_code == code)) is None:
+            return code
+    raise RuntimeError("Не вдалося створити код акаунта")
 
 
 def account_out(user: User) -> AccountOut:
@@ -45,6 +72,7 @@ def account_out(user: User) -> AccountOut:
         id=user.id,
         username=user.username or "",
         email=user.email or "",
+        friend_code=user.friend_code or "",
         display_name=user.display_name,
         avatar_url=user.avatar_url,
         banner_url=user.banner_url,
@@ -75,6 +103,7 @@ async def register(
         username=payload.username,
         email=payload.email,
         password_hash=hash_password(payload.password),
+        friend_code=await unique_friend_code(db),
         display_name=payload.display_name,
         is_guest=False,
     )
@@ -212,6 +241,237 @@ async def profile_image(
     if request.headers.get("if-none-match") == etag:
         return Response(status_code=304, headers=headers)
     return Response(content=stored.content, media_type=stored.mime_type, headers=headers)
+
+
+def friend_pair(first: uuid.UUID, second: uuid.UUID) -> tuple[uuid.UUID, uuid.UUID]:
+    return tuple(sorted((first, second), key=str))  # type: ignore[return-value]
+
+
+def friend_user(user: User, online_ids: set[uuid.UUID]) -> FriendUserOut:
+    return FriendUserOut(
+        id=user.id,
+        username=user.username or "",
+        display_name=user.display_name,
+        avatar_url=user.avatar_url,
+        friend_code=user.friend_code or "",
+        is_online=user.id in online_ids,
+    )
+
+
+@router.get("/api/friends", response_model=FriendsDashboardOut)
+async def friends_dashboard(
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+) -> FriendsDashboardOut:
+    friendship_result = await db.execute(
+        select(Friendship)
+        .where(
+            or_(
+                Friendship.user_one_id == user.id,
+                Friendship.user_two_id == user.id,
+            )
+        )
+        .order_by(Friendship.updated_at.desc())
+    )
+    relationships = list(friendship_result.scalars())
+    other_ids = {
+        item.user_two_id if item.user_one_id == user.id else item.user_one_id
+        for item in relationships
+    }
+    users_by_id: dict[uuid.UUID, User] = {}
+    if other_ids:
+        users_result = await db.execute(select(User).where(User.id.in_(other_ids)))
+        users_by_id = {item.id: item for item in users_result.scalars()}
+        online_result = await db.execute(
+            select(RoomMember.user_id)
+            .where(
+                RoomMember.user_id.in_(other_ids),
+                RoomMember.is_connected.is_(True),
+            )
+            .distinct()
+        )
+        online_ids = set(online_result.scalars())
+    else:
+        online_ids = set()
+
+    friends: list[FriendEntryOut] = []
+    incoming: list[FriendRequestOut] = []
+    outgoing: list[FriendRequestOut] = []
+    for relationship in relationships:
+        other_id = (
+            relationship.user_two_id
+            if relationship.user_one_id == user.id
+            else relationship.user_one_id
+        )
+        other = users_by_id.get(other_id)
+        if other is None or other.is_guest:
+            continue
+        entry = FriendEntryOut(
+            friendship_id=relationship.id,
+            user=friend_user(other, online_ids),
+            created_at=relationship.created_at,
+        )
+        if relationship.status == "accepted":
+            friends.append(entry)
+        elif relationship.status == "pending":
+            request = FriendRequestOut(
+                **entry.model_dump(),
+                direction="outgoing" if relationship.requested_by_id == user.id else "incoming",
+            )
+            (outgoing if request.direction == "outgoing" else incoming).append(request)
+
+    invitation_result = await db.execute(
+        select(RoomInvitation)
+        .options(
+            selectinload(RoomInvitation.room).selectinload(WatchRoom.anime),
+            selectinload(RoomInvitation.sender),
+        )
+        .where(
+            RoomInvitation.recipient_id == user.id,
+            RoomInvitation.status == "pending",
+            RoomInvitation.expires_at > datetime.now(timezone.utc),
+        )
+        .order_by(RoomInvitation.created_at.desc())
+    )
+    invitations = list(invitation_result.scalars())
+    invitation_senders = {item.sender_id for item in invitations}
+    invitation_online = set(online_ids)
+    if invitation_senders - other_ids:
+        online_result = await db.execute(
+            select(RoomMember.user_id)
+            .where(
+                RoomMember.user_id.in_(invitation_senders),
+                RoomMember.is_connected.is_(True),
+            )
+            .distinct()
+        )
+        invitation_online.update(online_result.scalars())
+
+    return FriendsDashboardOut(
+        my_code=user.friend_code or "",
+        friends=friends,
+        incoming=incoming,
+        outgoing=outgoing,
+        room_invitations=[
+            RoomInvitationOut(
+                id=item.id,
+                invite_code=item.room.invite_code,
+                anime=AnimeOut.model_validate(item.room.anime) if item.room.anime else None,
+                episode_number=item.room.episode_number,
+                sender=friend_user(item.sender, invitation_online),
+                created_at=item.created_at,
+                expires_at=item.expires_at,
+            )
+            for item in invitations
+        ],
+    )
+
+
+@router.post("/api/friends/requests", status_code=status.HTTP_204_NO_CONTENT)
+async def send_friend_request(
+    payload: FriendRequestCreate,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    target = await db.scalar(
+        select(User).where(
+            User.friend_code == payload.code,
+            User.is_guest.is_(False),
+        )
+    )
+    if target is None:
+        raise HTTPException(status_code=404, detail="Акаунт із таким кодом не знайдено")
+    if target.id == user.id:
+        raise HTTPException(status_code=409, detail="Не можна додати самого себе")
+    user_one_id, user_two_id = friend_pair(user.id, target.id)
+    relationship = await db.scalar(
+        select(Friendship).where(
+            Friendship.user_one_id == user_one_id,
+            Friendship.user_two_id == user_two_id,
+        )
+    )
+    if relationship is not None and relationship.status == "accepted":
+        raise HTTPException(status_code=409, detail="Ви вже друзі")
+    if relationship is not None and relationship.status == "pending":
+        raise HTTPException(status_code=409, detail="Заявка вже існує")
+    if relationship is None:
+        relationship = Friendship(
+            user_one_id=user_one_id,
+            user_two_id=user_two_id,
+            requested_by_id=user.id,
+        )
+        db.add(relationship)
+    else:
+        relationship.requested_by_id = user.id
+        relationship.status = "pending"
+        relationship.updated_at = datetime.now(timezone.utc)
+    try:
+        await db.commit()
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(status_code=409, detail="Заявка вже існує") from exc
+
+
+@router.post(
+    "/api/friends/requests/{friendship_id}/accept",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def accept_friend_request(
+    friendship_id: uuid.UUID,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    relationship = await db.get(Friendship, friendship_id)
+    if (
+        relationship is None
+        or user.id not in {relationship.user_one_id, relationship.user_two_id}
+        or relationship.status != "pending"
+        or relationship.requested_by_id == user.id
+    ):
+        raise HTTPException(status_code=404, detail="Вхідну заявку не знайдено")
+    relationship.status = "accepted"
+    relationship.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+
+
+@router.delete(
+    "/api/friends/requests/{friendship_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_friend_request(
+    friendship_id: uuid.UUID,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    relationship = await db.get(Friendship, friendship_id)
+    if (
+        relationship is None
+        or user.id not in {relationship.user_one_id, relationship.user_two_id}
+        or relationship.status != "pending"
+    ):
+        raise HTTPException(status_code=404, detail="Заявку не знайдено")
+    await db.delete(relationship)
+    await db.commit()
+
+
+@router.delete("/api/friends/{friend_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_friend(
+    friend_id: uuid.UUID,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    user_one_id, user_two_id = friend_pair(user.id, friend_id)
+    relationship = await db.scalar(
+        select(Friendship).where(
+            Friendship.user_one_id == user_one_id,
+            Friendship.user_two_id == user_two_id,
+            Friendship.status == "accepted",
+        )
+    )
+    if relationship is None:
+        raise HTTPException(status_code=404, detail="Друга не знайдено")
+    await db.delete(relationship)
+    await db.commit()
 
 
 async def build_profile(
