@@ -32,12 +32,36 @@ class User(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     display_name: Mapped[str] = mapped_column(String(40))
     avatar_url: Mapped[str | None] = mapped_column(String(1000))
+    username: Mapped[str | None] = mapped_column(String(24), unique=True, index=True)
+    email: Mapped[str | None] = mapped_column(String(254), unique=True, index=True)
+    password_hash: Mapped[str | None] = mapped_column(String(500))
+    bio: Mapped[str | None] = mapped_column(String(300))
+    banner_url: Mapped[str | None] = mapped_column(String(1000))
+    is_profile_private: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
     is_guest: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, nullable=False
     )
 
     hosted_rooms: Mapped[list[WatchRoom]] = relationship(back_populates="host")
+
+
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
+
+    user: Mapped[User] = relationship()
 
 
 class Anime(Base):
@@ -218,6 +242,35 @@ class WatchProgress(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
     )
+
+
+class AnimeLibraryEntry(Base):
+    __tablename__ = "anime_library_entries"
+    __table_args__ = (
+        UniqueConstraint("user_id", "anime_id", name="uq_library_user_anime"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    anime_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("anime.id", ondelete="CASCADE"), index=True
+    )
+    status: Mapped[str] = mapped_column(
+        String(20), default="planned", server_default="planned", index=True
+    )
+    is_favorite: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    is_pinned: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    rating: Mapped[int | None] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+    anime: Mapped[Anime] = relationship()
 
 
 class ChatMessage(Base):
