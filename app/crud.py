@@ -500,7 +500,11 @@ async def unique_invite_code(db: AsyncSession, length: int = 8) -> str:
     raise RuntimeError("Не вдалося створити унікальний код кімнати")
 
 
-async def create_room(db: AsyncSession, data: RoomCreate) -> tuple[WatchRoom, User]:
+async def create_room(
+    db: AsyncSession,
+    data: RoomCreate,
+    account: User | None = None,
+) -> tuple[WatchRoom, User]:
     if data.anime_id is not None:
         anime = await db.get(Anime, data.anime_id)
         if anime is None:
@@ -520,9 +524,12 @@ async def create_room(db: AsyncSession, data: RoomCreate) -> tuple[WatchRoom, Us
         if resolved_source is None:
             raise SourceUnavailableError("Для цієї серії ще немає повного відео")
 
-    host = User(display_name=data.host_name, is_guest=True)
-    db.add(host)
-    await db.flush()
+    if account is None:
+        host = User(display_name=data.host_name, is_guest=True)
+        db.add(host)
+        await db.flush()
+    else:
+        host = account
 
     room = WatchRoom(
         invite_code=await unique_invite_code(db),
