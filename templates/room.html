@@ -516,6 +516,10 @@
       .room-code-box { height: 39px; display: flex; align-items: center; gap: 10px; padding: 0 5px 0 12px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255, 255, 255, .035); }
       .room-code-box > span { color: var(--muted-2); font-size: 9px; }
       .room-code-box strong { font-size: 11px; letter-spacing: .17em; }
+      .room-code-box { display: none; }
+      .invite-watch-button { height: 39px; padding: 0 14px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(143,184,161,.38); border-radius: 9px; background: rgba(143,184,161,.09); color: #c9ddd0; font-size: 11px; font-weight: 800; cursor: pointer; transition: .2s ease; }
+      .invite-watch-button:hover { transform: translateY(-1px); border-color: rgba(143,184,161,.62); background: rgba(143,184,161,.16); }
+      .invite-watch-button svg { width: 16px; height: 16px; }
       .copy-button { width: 29px; height: 29px; border-radius: 7px; color: var(--muted); }
       .copy-button svg { width: 14px; height: 14px; }
       .room-main {
@@ -527,6 +531,9 @@
         gap: 18px;
         padding: 22px 0 30px;
       }
+      body:not(.party-active) .room-main { grid-template-columns: minmax(0, 1fr); max-width: 1240px; }
+      body:not(.party-active) .chat-panel { display: none; }
+      body:not(.party-active) .player-card { max-width: 1180px; width: 100%; margin-inline: auto; }
       .watch-stage { min-width: 0; }
       .player-card { overflow: hidden; border: 1px solid var(--line); border-radius: 4px 15px 4px 15px; background: #091017; box-shadow: none; }
       .player-topline { height: 43px; display: flex; align-items: center; justify-content: space-between; padding: 0 13px 0 16px; border-bottom: 1px solid var(--line); }
@@ -580,6 +587,20 @@
       .chat-heading h2 { margin: 5px 0 0; font-size: 16px; letter-spacing: -.025em; }
       .online-pill { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 999px; background: rgba(65, 217, 138, .065); color: var(--green); font-size: 8px; font-weight: 700; }
       .online-pill > span:first-child { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+      .invite-friend-list { display: grid; gap: 8px; margin-top: 16px; }
+      .invite-friend-item { padding: 10px; display: grid; grid-template-columns: 43px minmax(0,1fr) auto; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 10px; background: rgba(255,255,255,.025); }
+      .invite-friend-avatar { width: 43px; height: 43px; display: grid; place-items: center; overflow: hidden; border-radius: 10px 10px 10px 4px; background: #15232b; color: #a9cdd9; font-size: 11px; font-weight: 850; }
+      .invite-friend-avatar img { width: 100%; height: 100%; object-fit: cover; }
+      .invite-friend-copy { min-width: 0; }
+      .invite-friend-copy strong, .invite-friend-copy span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .invite-friend-copy strong { font-size: 12px; }
+      .invite-friend-copy span { margin-top: 4px; color: var(--muted); font-size: 9px; }
+      .invite-friend-item button { min-height: 34px; padding: 0 11px; border: 1px solid rgba(121,169,198,.34); border-radius: 8px; background: rgba(121,169,198,.1); color: #c5dce5; font-size: 10px; font-weight: 800; cursor: pointer; }
+      .invite-friend-item button:disabled { opacity: .55; cursor: default; }
+      .invite-empty { margin: 15px 0 0; padding: 18px; border: 1px dashed var(--line-strong); border-radius: 10px; color: var(--muted); text-align: center; font-size: 11px; line-height: 1.5; }
+      .session-link { margin-top: 14px; padding: 10px 12px; display: flex; align-items: center; gap: 9px; border: 1px solid var(--line); border-radius: 9px; background: #0a1015; }
+      .session-link code { min-width: 0; flex: 1; overflow: hidden; color: #abc8d4; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
+      .session-link button { width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 8px; background: #131e25; color: var(--text); cursor: pointer; }
       .chat-messages { flex: 1; min-height: 260px; overflow-y: auto; padding: 17px; scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }
       .chat-message { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 15px; font-size: 11px; line-height: 1.5; }
       .chat-message strong { color: var(--violet-light); font-size: 9px; letter-spacing: .01em; }
@@ -809,6 +830,8 @@
         .room-code-box > span { display: none; }
         .room-code-box { padding-left: 9px; }
         .room-header-actions .language-switcher { display: none; }
+        .invite-watch-button span { display: none; }
+        .invite-watch-button { width: 39px; padding: 0; justify-content: center; }
         .file-drop > span:not(.upload-orb):not(.file-privacy) { max-width: 280px; }
       }
 
@@ -848,6 +871,11 @@
             </div>
           </div>
 
+          <button class="invite-watch-button" id="invite-friend-button" type="button">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm6-1a3 3 0 1 0 0-6M2 20a7 7 0 0 1 14 0m3-6v6m3-3h-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <span data-i18n="inviteFriend">Запросити друга</span>
+          </button>
+
           <div class="room-code-box">
             <span data-i18n="roomCode">Код кімнати</span>
             <strong id="room-code">{{ invite_code }}</strong>
@@ -863,7 +891,7 @@
       <section class="watch-stage">
         <div class="player-card">
           <div class="player-topline">
-            <div class="player-live-label"><span></span><span data-i18n="watchParty">Watch Party</span></div>
+            <div class="player-live-label"><span></span><span data-i18n="watchParty">Онлайн-перегляд</span></div>
             <span class="connection-badge" id="connection-status" data-i18n="connecting">Підключення…</span>
           </div>
 
@@ -915,7 +943,7 @@
             <span class="section-kicker" data-i18n="roomCommunication">Спілкування</span>
             <h2 data-i18n="roomChat">Чат кімнати</h2>
           </div>
-          <span class="online-pill"><span></span><span data-i18n="online">Онлайн</span></span>
+          <span class="online-pill"><span></span><span data-i18n="online">Онлайн</span> · <strong id="online-count">1</strong></span>
         </div>
         <div class="chat-messages" id="chat-messages" aria-live="polite">
           <div class="chat-message system-message"><span data-i18n="connectingToRoom">Підключаємося до кімнати…</span></div>
@@ -954,6 +982,18 @@
       </section>
     </div>
 
+    <div class="modal-backdrop" id="invite-friend-modal" hidden>
+      <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="invite-friend-title">
+        <button class="modal-close" type="button" data-modal-close aria-label="Close">×</button>
+        <span class="section-kicker" data-i18n="watchTogether">Дивитися разом</span>
+        <h2 id="invite-friend-title" data-i18n="inviteFriend">Запросити друга</h2>
+        <p data-i18n="inviteFriendHelp">Друг отримає запрошення у своєму профілі й одразу потрапить на ваш таймкод.</p>
+        <div class="session-link"><code id="session-link-value"></code><button id="copy-session-link" type="button" data-i18n-title="copyLink" title="Копіювати">⧉</button></div>
+        <div class="invite-friend-list" id="invite-friend-list"></div>
+        <p class="invite-empty" id="invite-friend-empty" hidden></p>
+      </section>
+    </div>
+
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.16/dist/hls.min.js" crossorigin="anonymous"></script>
     <script>
@@ -976,7 +1016,7 @@
           episode: "Серія", episodeShort: "{count} сер.", ongoing: "Онґоїнг", sharedControls: "Спільне керування", sharedControlsText: "Учасники зможуть ставити паузу й перемотувати.",
           createAndContinue: "Створити й продовжити", createRoom: "Створити кімнату", creating: "Створюємо…", invitation: "Запрошення", joinRoomTitle: "Увійти в кімнату",
           joinRoomDescription: "Вставте восьмизначний код, який надіслав власник кімнати.", roomCode: "Код кімнати", enterRoom: "Увійти", serverError: "Помилка сервера",
-          backToCatalog: "До каталогу", copyLink: "Копіювати посилання", watchParty: "Watch Party", connecting: "Підключення…", synchronized: "Синхронізовано", reconnecting: "Перепідключення…",
+          backToCatalog: "До каталогу", copyLink: "Копіювати посилання", watchParty: "Онлайн-перегляд", connecting: "Підключення…", synchronized: "Готово", reconnecting: "Перепідключення…",
           roomNotFound: "Кімнату не знайдено", chooseEpisode: "Вибрати файл серії", chooseEpisodeText: "MP4, WebM або MKV. Файл залишиться тільки на вашому пристрої.", neverUploaded: "Не завантажується на сервер",
           episodeOne: "Серія 1", episodeNumber: "Серія {count}", loadingRoom: "Завантаження кімнати…", sharedWatch: "Спільний перегляд", syncActive: "Синхронізація активна", syncActiveText: "Пауза й перемотування для всіх",
           sameFileNotice: "Усі учасники мають вибрати однаковий файл серії.", selectedInRoom: "У кімнаті вибрано: {name}", checkingFile: "Перевіряємо файл…", fileMatches: "Файл збігається: {name}", episodeReady: "серія готова",
@@ -986,7 +1026,7 @@
           autoplayBlocked: "Браузер заблокував автозапуск — натисніть Play один раз.", roomCommunication: "Спілкування", roomChat: "Чат кімнати", online: "Онлайн", connectingToRoom: "Підключаємося до кімнати…",
           messagePlaceholder: "Написати повідомлення…", send: "Надіслати", privateRoom: "Приватна кімната за посиланням", almostReady: "Майже готово", introduceYourself: "Як вас показувати в кімнаті?",
           introduceText: "Це ім’я бачитимуть інші учасники в чаті.", joinWatch: "Приєднатися до перегляду", connectedMessage: "Ви підключилися до кімнати.", memberJoined: "{name} приєднався(-лась).", memberLeft: "{name} вийшов(-ла).",
-          linkCopied: "Посилання скопійовано", copiedCode: "Код скопійовано", finished: "Завершено", airing: "Виходить", upcoming: "Анонсовано", hiatus: "Призупинено", cancelled: "Скасовано", unknown: "Статус невідомий",
+          linkCopied: "Посилання скопійовано", copiedCode: "Код скопійовано", finished: "Завершено", airing: "Виходить", upcoming: "Анонсовано", hiatus: "Призупинено", cancelled: "Скасовано", unknown: "Статус невідомий", inviteFriend: "Запросити друга", watchTogether: "Дивитися разом", inviteFriendHelp: "Друг отримає запрошення у своєму профілі й одразу потрапить на ваш таймкод.", invite: "Запросити", invited: "Надіслано", noFriends: "Спочатку додайте друзів у профілі — або скопіюйте посилання вище.", signInToInvite: "Увійдіть у профіль, щоб надсилати друзям запрошення.", onlineFriend: "У мережі", offlineFriend: "Не в мережі",
         },
         en: {
           navHome: "Home", navCatalog: "Catalog", navTogether: "Together", joinRoom: "Join a room",
@@ -1003,7 +1043,7 @@
           episode: "Episode", episodeShort: "{count} eps.", ongoing: "Ongoing", sharedControls: "Shared controls", sharedControlsText: "Members can pause and seek.",
           createAndContinue: "Create and continue", createRoom: "Create room", creating: "Creating…", invitation: "Invitation", joinRoomTitle: "Join a room",
           joinRoomDescription: "Enter the eight-character code sent by the room owner.", roomCode: "Room code", enterRoom: "Join", serverError: "Server error",
-          backToCatalog: "Back to catalog", copyLink: "Copy link", watchParty: "Watch Party", connecting: "Connecting…", synchronized: "Synchronized", reconnecting: "Reconnecting…",
+          backToCatalog: "Back to catalog", copyLink: "Copy link", watchParty: "Online watch", connecting: "Connecting…", synchronized: "Ready", reconnecting: "Reconnecting…",
           roomNotFound: "Room not found", chooseEpisode: "Choose episode file", chooseEpisodeText: "MP4, WebM, or MKV. The file stays only on your device.", neverUploaded: "Never uploaded to the server",
           episodeOne: "Episode 1", episodeNumber: "Episode {count}", loadingRoom: "Loading room…", sharedWatch: "Watch together", syncActive: "Sync is active", syncActiveText: "Pause and seeking for everyone",
           sameFileNotice: "All members must choose the same episode file.", selectedInRoom: "Selected in this room: {name}", checkingFile: "Checking file…", fileMatches: "File matches: {name}", episodeReady: "episode ready",
@@ -1013,7 +1053,7 @@
           autoplayBlocked: "Your browser blocked autoplay — press Play once.", roomCommunication: "Conversation", roomChat: "Room chat", online: "Online", connectingToRoom: "Connecting to the room…",
           messagePlaceholder: "Write a message…", send: "Send", privateRoom: "Private link-only room", almostReady: "Almost ready", introduceYourself: "What should we call you?",
           introduceText: "Other members will see this name in chat.", joinWatch: "Join the watch party", connectedMessage: "You joined the room.", memberJoined: "{name} joined.", memberLeft: "{name} left.",
-          linkCopied: "Link copied", copiedCode: "Code copied", finished: "Finished", airing: "Releasing", upcoming: "Upcoming", hiatus: "On hiatus", cancelled: "Cancelled", unknown: "Unknown status",
+          linkCopied: "Link copied", copiedCode: "Code copied", finished: "Finished", airing: "Releasing", upcoming: "Upcoming", hiatus: "On hiatus", cancelled: "Cancelled", unknown: "Unknown status", inviteFriend: "Invite friend", watchTogether: "Watch together", inviteFriendHelp: "Your friend gets an invitation in their profile and joins at your current timestamp.", invite: "Invite", invited: "Sent", noFriends: "Add friends in your profile first, or copy the link above.", signInToInvite: "Sign in to invite friends directly.", onlineFriend: "Online", offlineFriend: "Offline",
         },
         ru: {
           navHome: "Главная", navCatalog: "Каталог", navTogether: "Вместе", joinRoom: "Войти в комнату",
@@ -1030,7 +1070,7 @@
           episode: "Серия", episodeShort: "{count} сер.", ongoing: "Онгоинг", sharedControls: "Общее управление", sharedControlsText: "Участники смогут ставить паузу и перематывать.",
           createAndContinue: "Создать и продолжить", createRoom: "Создать комнату", creating: "Создаём…", invitation: "Приглашение", joinRoomTitle: "Войти в комнату",
           joinRoomDescription: "Введите восьмизначный код, который прислал владелец комнаты.", roomCode: "Код комнаты", enterRoom: "Войти", serverError: "Ошибка сервера",
-          backToCatalog: "К каталогу", copyLink: "Копировать ссылку", watchParty: "Watch Party", connecting: "Подключение…", synchronized: "Синхронизировано", reconnecting: "Переподключение…",
+          backToCatalog: "К каталогу", copyLink: "Копировать ссылку", watchParty: "Онлайн-просмотр", connecting: "Подключение…", synchronized: "Готово", reconnecting: "Переподключение…",
           roomNotFound: "Комната не найдена", chooseEpisode: "Выбрать файл серии", chooseEpisodeText: "MP4, WebM или MKV. Файл останется только на вашем устройстве.", neverUploaded: "Не загружается на сервер",
           episodeOne: "Серия 1", episodeNumber: "Серия {count}", loadingRoom: "Загрузка комнаты…", sharedWatch: "Совместный просмотр", syncActive: "Синхронизация активна", syncActiveText: "Пауза и перемотка для всех",
           sameFileNotice: "Все участники должны выбрать одинаковый файл серии.", selectedInRoom: "В комнате выбран: {name}", checkingFile: "Проверяем файл…", fileMatches: "Файл совпадает: {name}", episodeReady: "серия готова",
@@ -1040,7 +1080,7 @@
           autoplayBlocked: "Браузер заблокировал автозапуск — нажмите Play один раз.", roomCommunication: "Общение", roomChat: "Чат комнаты", online: "Онлайн", connectingToRoom: "Подключаемся к комнате…",
           messagePlaceholder: "Написать сообщение…", send: "Отправить", privateRoom: "Приватная комната по ссылке", almostReady: "Почти готово", introduceYourself: "Как вас показывать в комнате?",
           introduceText: "Это имя увидят другие участники в чате.", joinWatch: "Присоединиться к просмотру", connectedMessage: "Вы подключились к комнате.", memberJoined: "{name} присоединился(-лась).", memberLeft: "{name} вышел(-ла).",
-          linkCopied: "Ссылка скопирована", copiedCode: "Код скопирован", finished: "Завершён", airing: "Выходит", upcoming: "Анонсирован", hiatus: "Приостановлен", cancelled: "Отменён", unknown: "Статус неизвестен",
+          linkCopied: "Ссылка скопирована", copiedCode: "Код скопирован", finished: "Завершён", airing: "Выходит", upcoming: "Анонсирован", hiatus: "Приостановлен", cancelled: "Отменён", unknown: "Статус неизвестен", inviteFriend: "Пригласить друга", watchTogether: "Смотреть вместе", inviteFriendHelp: "Друг получит приглашение в профиле и сразу попадёт на ваш таймкод.", invite: "Пригласить", invited: "Отправлено", noFriends: "Сначала добавьте друзей в профиле — или скопируйте ссылку выше.", signInToInvite: "Войдите в профиль, чтобы отправлять друзьям приглашения.", onlineFriend: "В сети", offlineFriend: "Не в сети",
         },
       };
 
@@ -1461,6 +1501,32 @@
         let kodikSample = null;
         let rejectedShortSource = false;
 
+        function setOnlineCount(value) {
+          const count=Math.max(1,Number(value)||1);
+          document.querySelector("#online-count").textContent=String(count);
+          document.body.classList.toggle("party-active",count>1);
+        }
+
+        function inviteFriendItem(entry) {
+          const item=document.createElement("article"); item.className="invite-friend-item";
+          const avatar=document.createElement("span"); avatar.className="invite-friend-avatar";
+          if(entry.user.avatar_url){const image=document.createElement("img");image.src=entry.user.avatar_url;image.alt="";avatar.append(image);}else avatar.textContent=entry.user.display_name.slice(0,2).toUpperCase();
+          const copy=document.createElement("div");copy.className="invite-friend-copy";const nameNode=document.createElement("strong");nameNode.textContent=entry.user.display_name;const statusNode=document.createElement("span");statusNode.textContent=t(entry.user.is_online?"onlineFriend":"offlineFriend");copy.append(nameNode,statusNode);
+          const button=document.createElement("button");button.type="button";button.textContent=t("invite");button.addEventListener("click",async()=>{button.disabled=true;try{await api(`/api/rooms/${code}/invites`,{method:"POST",body:JSON.stringify({friend_id:entry.user.id})});button.textContent=t("invited");showToast(t("invited"),"success");}catch(error){button.disabled=false;showToast(error.message,"error");}});
+          item.append(avatar,copy,button);return item;
+        }
+
+        async function openInviteModal() {
+          const modal=document.querySelector("#invite-friend-modal");const list=document.querySelector("#invite-friend-list");const empty=document.querySelector("#invite-friend-empty");
+          document.querySelector("#session-link-value").textContent=location.href;list.replaceChildren();empty.hidden=true;openModal(modal);
+          if(!signedInAccount){empty.textContent=t("signInToInvite");empty.hidden=false;return;}
+          try{const dashboard=await api("/api/friends");if(!dashboard.friends.length){empty.textContent=t("noFriends");empty.hidden=false;return;}list.replaceChildren(...dashboard.friends.map(inviteFriendItem));}catch(error){empty.textContent=error.message;empty.hidden=false;}
+        }
+        document.querySelector("#invite-friend-button").addEventListener("click",openInviteModal);
+        document.querySelector("#copy-session-link").addEventListener("click",async()=>{await navigator.clipboard.writeText(location.href);showToast(t("linkCopied"),"success");});
+        document.querySelectorAll("#invite-friend-modal [data-modal-close]").forEach((button)=>button.addEventListener("click",()=>closeModal(document.querySelector("#invite-friend-modal"))));
+        document.querySelector("#invite-friend-modal").addEventListener("click",(event)=>{if(event.target===event.currentTarget)closeModal(event.currentTarget);});
+
         function setPlayerStatus(message, state = "") {
           fileStatusText.removeAttribute("data-i18n");
           fileStatusText.textContent = message;
@@ -1817,6 +1883,7 @@
         async function handleSocketMessage(event) {
           let message;
           try { message = JSON.parse(event.data); } catch { return; }
+          if (message.online_count !== undefined) setOnlineCount(message.online_count);
           if (message.type === "connected") {
             ownUserId = message.user_id;
             localStorage.setItem(`room:${code}:user-id`, ownUserId);
