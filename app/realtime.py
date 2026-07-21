@@ -30,6 +30,9 @@ class ConnectionManager:
         if not sockets:
             self._rooms.pop(room_code, None)
 
+    def count(self, room_code: str) -> int:
+        return len(self._rooms.get(room_code, ()))
+
     async def broadcast(self, room_code: str, payload: dict[str, Any]) -> None:
         sockets = list(self._rooms.get(room_code, ()))
         if not sockets:
@@ -73,4 +76,3 @@ class RedisRoomState:
 
 connections = ConnectionManager()
 room_state_cache = RedisRoomState()
-
