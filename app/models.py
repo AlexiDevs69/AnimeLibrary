@@ -36,6 +36,7 @@ class User(Base):
     username: Mapped[str | None] = mapped_column(String(24), unique=True, index=True)
     email: Mapped[str | None] = mapped_column(String(254), unique=True, index=True)
     password_hash: Mapped[str | None] = mapped_column(String(500))
+    friend_code: Mapped[str | None] = mapped_column(String(12), unique=True, index=True)
     bio: Mapped[str | None] = mapped_column(String(300))
     banner_url: Mapped[str | None] = mapped_column(String(1000))
     is_profile_private: Mapped[bool] = mapped_column(
@@ -248,6 +249,65 @@ class RoomMember(Base):
 
     room: Mapped[WatchRoom] = relationship(back_populates="members")
     user: Mapped[User] = relationship()
+
+
+class Friendship(Base):
+    __tablename__ = "friendships"
+    __table_args__ = (
+        UniqueConstraint("user_one_id", "user_two_id", name="uq_friendship_pair"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    user_one_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    user_two_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    requested_by_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    status: Mapped[str] = mapped_column(
+        String(12), default="pending", server_default="pending", index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+
+class RoomInvitation(Base):
+    __tablename__ = "room_invitations"
+    __table_args__ = (
+        UniqueConstraint("room_id", "recipient_id", name="uq_room_invitation_recipient"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    room_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("watch_rooms.id", ondelete="CASCADE"), index=True
+    )
+    sender_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    recipient_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    status: Mapped[str] = mapped_column(
+        String(12), default="pending", server_default="pending", index=True
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+    room: Mapped[WatchRoom] = relationship()
+    sender: Mapped[User] = relationship(foreign_keys=[sender_id])
+    recipient: Mapped[User] = relationship(foreign_keys=[recipient_id])
 
 
 class WatchProgress(Base):
