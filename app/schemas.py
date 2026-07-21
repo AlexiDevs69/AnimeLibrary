@@ -190,6 +190,8 @@ def clean_image_url(value: str | None) -> str | None:
     cleaned = value.strip()
     if not cleaned:
         return None
+    if re.fullmatch(r"/api/media/profile/[0-9a-fA-F-]{36}", cleaned):
+        return cleaned
     parsed = urlparse(cleaned)
     if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
         raise ValueError("Зображення повинно мати звичайне HTTPS-посилання")
