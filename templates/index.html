@@ -143,6 +143,8 @@
       .header-join-button:hover { background: #e4e0c9; border-color: #e4e0c9; transform: translateY(-1px); }
       .header-join-button svg { width: 17px; height: 17px; }
       .header-account-button { height: 39px; padding: 0 12px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 5px; background: rgba(121, 169, 198, .07); color: #c6d9df; text-decoration: none; font-size: 12px; font-weight: 750; }
+      .header-account-button { position: relative; }
+      .header-notice { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; display: grid; place-items: center; border: 2px solid #080d12; border-radius: 99px; background: #9bc8dc; color: #081116; font-size: 9px; font-weight: 900; }
       .header-account-button svg { width: 17px; height: 17px; }
       .language-menu {
         position: absolute;
@@ -328,6 +330,7 @@
       .anime-card:hover { transform: translateX(3px); border-color: rgba(121, 169, 198, .42); background: linear-gradient(100deg, rgba(121, 169, 198, .075), rgba(143, 184, 161, .018)); box-shadow: inset 3px 0 0 var(--violet); }
       .anime-poster { width: 70px; height: 98px; border-radius: 3px 9px 3px 9px; object-fit: cover; background: var(--surface-2); box-shadow: 0 5px 12px rgba(0, 0, 0, .28); }
       .anime-card-main { min-width: 0; }
+      .anime-poster, .anime-card-main { cursor: pointer; }
       .anime-title-row { display: flex; align-items: center; gap: 9px; min-width: 0; }
       .anime-title-row h3 { min-width: 0; margin: 0; overflow: hidden; color: #f1f1f4; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; letter-spacing: -.02em; }
       .score-badge {
@@ -845,7 +848,7 @@
         <nav class="main-nav" aria-label="Primary navigation">
           <a class="nav-link active" href="/" data-i18n="navHome">Головна</a>
           <a class="nav-link" href="#catalog" data-i18n="navCatalog">Каталог</a>
-          <a class="nav-link" href="#together" data-i18n="navTogether">Разом</a>
+          <a class="nav-link" href="#together" data-i18n="navTogether">З друзями</a>
         </nav>
 
         <div class="header-actions">
@@ -869,11 +872,16 @@
             <span data-account-label data-i18n="profile">Профіль</span>
           </a>
 
+          <a class="header-account-button" id="friends-link" href="/profile#friends" hidden>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M8.5 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7.5-1a3 3 0 1 0 0-6M2 20a6.5 6.5 0 0 1 13 0m1-6a5 5 0 0 1 6 4.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <span data-i18n="friends">Друзі</span><b class="header-notice" id="friends-notice" hidden>0</b>
+          </a>
+
           <button class="header-join-button" id="join-room-button" type="button">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
               <path d="M9 8 5 12l4 4M5.5 12H15M13 5h4a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            <span data-i18n="joinRoom">Увійти в кімнату</span>
+            <span data-i18n="joinRoom">Ввести код</span>
           </button>
         </div>
       </div>
@@ -886,10 +894,10 @@
         <div class="hero-content">
           <div class="hero-badge">
             <span class="pulse-dot"></span>
-            <span data-i18n="heroBadge">Дивіться синхронно</span>
+            <span data-i18n="heroBadge">Аніме без зайвого</span>
           </div>
-          <h1 data-i18n-html="heroTitle">Знайди аніме.<br>Поклич друзів. <span>Дивіться разом.</span></h1>
-          <p data-i18n="heroDescription">Пауза, перемотування й швидкість синхронізуються для всіх. Відео залишається на ваших пристроях.</p>
+          <h1 data-i18n-html="heroTitle">Знайди. Відкрий. <span>Дивись.</span></h1>
+          <p data-i18n="heroDescription">Звичайний комфортний перегляд — одразу. Якщо захочеш, запросиш друга вже під час серії.</p>
 
           <form class="hero-search" id="anime-search-form" role="search">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -931,7 +939,7 @@
           <div>
             <span class="section-kicker" data-i18n="catalogKicker">Каталог AniList</span>
             <h2 id="catalog-title" data-i18n="trendingNow">У тренді зараз</h2>
-            <p data-i18n="catalogSubtitle">Виберіть тайтл і створіть кімнату одним натисканням.</p>
+            <p data-i18n="catalogSubtitle">Виберіть тайтл, серію — і плеєр одразу готовий.</p>
           </div>
           <div class="catalog-meta">
             <span class="catalog-status" id="catalog-status" data-i18n="loading">Завантаження…</span>
@@ -956,8 +964,8 @@
         <div class="together-orb" aria-hidden="true"></div>
         <div class="together-copy">
           <span class="section-kicker" data-i18n="togetherKicker">Watch Party</span>
-          <h2 data-i18n="togetherTitle">Одна кімната — один момент для всіх.</h2>
-          <p data-i18n="togetherDescription">Надішліть другові посилання, виберіть однаковий файл і дивіться без затримок та зайвих сервісів.</p>
+          <h2 data-i18n="togetherTitle">Дивись сам. Запрошуй, коли захочеш.</h2>
+          <p data-i18n="togetherDescription">Почни серію як на звичайному аніме-сайті. Друга можна покликати прямо з плеєра — пауза й таймкод синхронізуються автоматично.</p>
         </div>
         <button class="secondary-cta" id="banner-join-button" type="button">
           <span data-i18n="haveCode">У мене є код</span>
@@ -980,16 +988,13 @@
         <div class="modal-anime-preview">
           <img id="modal-anime-poster" alt="">
           <div>
-            <span class="section-kicker" data-i18n="newRoom">Нова кімната</span>
-            <h2 id="create-room-title" data-i18n="createRoomTitle">Підготуємо спільний перегляд</h2>
+            <span class="section-kicker" data-i18n="newRoom">Почати перегляд</span>
+            <h2 id="create-room-title" data-i18n="createRoomTitle">Оберіть серію</h2>
             <p id="modal-anime-title"></p>
           </div>
         </div>
         <form class="modal-form" id="create-room-form">
-          <label>
-            <span data-i18n="yourName">Ваше ім’я</span>
-            <input id="create-room-name" type="text" minlength="2" maxlength="40" autocomplete="nickname" required data-i18n-placeholder="namePlaceholder" placeholder="Як вас показувати в кімнаті">
-          </label>
+          <input id="create-room-name" type="hidden" value="Гість">
           <label>
             <span data-i18n="episode">Серія</span>
             <select id="create-room-episode" required></select>
@@ -999,16 +1004,8 @@
             <select id="create-room-source" required></select>
           </label>
           <p class="source-availability" id="source-availability" data-i18n="loadingEpisodes">Перевіряємо доступні повні серії…</p>
-          <label class="toggle-row">
-            <span>
-              <strong data-i18n="sharedControls">Спільне керування</strong>
-              <small data-i18n="sharedControlsText">Учасники зможуть ставити паузу й перемотувати.</small>
-            </span>
-            <input id="create-room-controls" type="checkbox" checked>
-            <span class="toggle-track"></span>
-          </label>
           <button class="modal-primary" type="submit">
-            <span data-i18n="createAndContinue">Створити й продовжити</span>
+            <span data-i18n="createAndContinue">Дивитися зараз</span>
             <svg viewBox="0 0 24 24" fill="none"><path d="m9 18 6-6-6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
         </form>
@@ -1041,20 +1038,20 @@
 
       const translations = {
         uk: {
-          navHome: "Головна", navCatalog: "Каталог", navTogether: "Разом", joinRoom: "Увійти в кімнату", profile: "Профіль", addToLibrary: "Додати в бібліотеку", addedToLibrary: "У бібліотеці",
-          heroBadge: "Дивіться синхронно", heroTitle: "Знайди аніме.<br>Поклич друзів. <span>Дивіться разом.</span>",
-          heroDescription: "Пауза, перемотування й швидкість синхронізуються для всіх. Відео залишається на ваших пристроях.",
+          navHome: "Головна", navCatalog: "Каталог", navTogether: "З друзями", joinRoom: "Ввести код", profile: "Профіль", friends: "Друзі", addToLibrary: "Додати в бібліотеку", addedToLibrary: "У бібліотеці",
+          heroBadge: "Аніме без зайвого", heroTitle: "Знайди. Відкрий. <span>Дивись.</span>",
+          heroDescription: "Звичайний комфортний перегляд — одразу. Якщо захочеш, запросиш друга вже під час серії.",
           searchPlaceholder: "Введіть назву аніме…", search: "Знайти", popularQueries: "Популярне:",
           metricSync: "Точна синхронізація", metricSyncText: "Один таймкод для всіх", metricPrivate: "Приватні файли", metricPrivateText: "Нічого не завантажується",
-          catalogKicker: "Каталог AniList", trendingNow: "У тренді зараз", catalogSubtitle: "Виберіть тайтл і створіть кімнату одним натисканням.",
+          catalogKicker: "Каталог AniList", trendingNow: "У тренді зараз", catalogSubtitle: "Виберіть тайтл, серію — і плеєр одразу готовий.",
           resultsFor: "Результати: {query}", loading: "Завантаження…", loadingFailed: "Не вдалося завантажити", titlesCount: "{count} тайтлів", refresh: "Оновити",
           nothingFound: "Нічого не знайдено", tryAnotherQuery: "Спробуйте іншу назву або перевірте написання.",
-          togetherKicker: "Watch Party", togetherTitle: "Одна кімната — один момент для всіх.", togetherDescription: "Надішліть другові посилання, виберіть однаковий файл і дивіться без затримок та зайвих сервісів.",
+          togetherKicker: "Watch Together", togetherTitle: "Дивись сам. Запрошуй, коли захочеш.", togetherDescription: "Почни серію як на звичайному аніме-сайті. Друга можна покликати прямо з плеєра — пауза й таймкод синхронізуються автоматично.",
           haveCode: "У мене є код", footerText: "Каталог на основі AniList. Відеофайли не зберігаються на сервері.",
-          newRoom: "Нова кімната", createRoomTitle: "Підготуємо спільний перегляд", yourName: "Ваше ім’я", namePlaceholder: "Як вас показувати в кімнаті",
+          newRoom: "Почати перегляд", createRoomTitle: "Оберіть серію", yourName: "Ваше ім’я", namePlaceholder: "Як вас показувати в кімнаті", guestName: "Гість",
           episode: "Серія", episodeShort: "{count} сер.", ongoing: "Онґоїнг", sharedControls: "Спільне керування", sharedControlsText: "Учасники зможуть ставити паузу й перемотувати.",
           videoVersion: "Версія відео", loadingEpisodes: "Перевіряємо доступні повні серії…", noFullEpisodes: "Для цього тайтлу ще немає доданих повних серій.", fullEpisodesReady: "Доступно повних серій: {count}",
-          createAndContinue: "Створити й продовжити", createRoom: "Створити кімнату", creating: "Створюємо…", invitation: "Запрошення", joinRoomTitle: "Увійти в кімнату",
+          createAndContinue: "Дивитися зараз", createRoom: "Дивитися", creating: "Готуємо плеєр…", invitation: "Запрошення", joinRoomTitle: "Приєднатися до перегляду",
           joinRoomDescription: "Вставте восьмизначний код, який надіслав власник кімнати.", roomCode: "Код кімнати", enterRoom: "Увійти", serverError: "Помилка сервера",
           backToCatalog: "До каталогу", copyLink: "Копіювати посилання", watchParty: "Watch Party", connecting: "Підключення…", synchronized: "Синхронізовано", reconnecting: "Перепідключення…",
           roomNotFound: "Кімнату не знайдено", chooseEpisode: "Вибрати файл серії", chooseEpisodeText: "MP4, WebM або MKV. Файл залишиться тільки на вашому пристрої.", neverUploaded: "Не завантажується на сервер",
@@ -1066,20 +1063,20 @@
           linkCopied: "Посилання скопійовано", copiedCode: "Код скопійовано", finished: "Завершено", airing: "Виходить", upcoming: "Анонсовано", hiatus: "Призупинено", cancelled: "Скасовано", unknown: "Статус невідомий",
         },
         en: {
-          navHome: "Home", navCatalog: "Catalog", navTogether: "Together", joinRoom: "Join a room", profile: "Profile", addToLibrary: "Add to library", addedToLibrary: "In library",
-          heroBadge: "Watch in sync", heroTitle: "Find an anime.<br>Invite friends. <span>Watch together.</span>",
-          heroDescription: "Pause, seeking, and playback speed stay synchronized for everyone. Video remains on your devices.",
+          navHome: "Home", navCatalog: "Catalog", navTogether: "With friends", joinRoom: "Enter code", profile: "Profile", friends: "Friends", addToLibrary: "Add to library", addedToLibrary: "In library",
+          heroBadge: "Anime without clutter", heroTitle: "Find it. Open it. <span>Watch.</span>",
+          heroDescription: "Start watching normally and invite a friend from the player whenever you want.",
           searchPlaceholder: "Enter an anime title…", search: "Search", popularQueries: "Popular:",
           metricSync: "Precise sync", metricSyncText: "One timeline for everyone", metricPrivate: "Private files", metricPrivateText: "Nothing gets uploaded",
-          catalogKicker: "AniList catalog", trendingNow: "Trending now", catalogSubtitle: "Choose a title and create a room in one click.",
+          catalogKicker: "AniList catalog", trendingNow: "Trending now", catalogSubtitle: "Choose a title and episode — the player is ready.",
           resultsFor: "Results: {query}", loading: "Loading…", loadingFailed: "Could not load", titlesCount: "{count} titles", refresh: "Refresh",
           nothingFound: "Nothing found", tryAnotherQuery: "Try a different title or check the spelling.",
-          togetherKicker: "Watch Party", togetherTitle: "One room — the same moment for everyone.", togetherDescription: "Send a link to a friend, choose the same file, and watch without delays or extra services.",
+          togetherKicker: "Watch Together", togetherTitle: "Watch solo. Invite whenever you want.", togetherDescription: "Start an episode like on any anime site. Invite a friend from the player and playback syncs automatically.",
           haveCode: "I have a code", footerText: "Catalog powered by AniList. Video files are never stored on the server.",
-          newRoom: "New room", createRoomTitle: "Set up a watch party", yourName: "Your name", namePlaceholder: "How others will see you",
+          newRoom: "Start watching", createRoomTitle: "Choose an episode", yourName: "Your name", namePlaceholder: "How others will see you", guestName: "Guest",
           episode: "Episode", episodeShort: "{count} eps.", ongoing: "Ongoing", sharedControls: "Shared controls", sharedControlsText: "Members can pause and seek.",
           videoVersion: "Video version", loadingEpisodes: "Checking available full episodes…", noFullEpisodes: "No full episodes have been added for this title yet.", fullEpisodesReady: "Full episodes available: {count}",
-          createAndContinue: "Create and continue", createRoom: "Create room", creating: "Creating…", invitation: "Invitation", joinRoomTitle: "Join a room",
+          createAndContinue: "Watch now", createRoom: "Watch", creating: "Preparing player…", invitation: "Invitation", joinRoomTitle: "Join the watch",
           joinRoomDescription: "Enter the eight-character code sent by the room owner.", roomCode: "Room code", enterRoom: "Join", serverError: "Server error",
           backToCatalog: "Back to catalog", copyLink: "Copy link", watchParty: "Watch Party", connecting: "Connecting…", synchronized: "Synchronized", reconnecting: "Reconnecting…",
           roomNotFound: "Room not found", chooseEpisode: "Choose episode file", chooseEpisodeText: "MP4, WebM, or MKV. The file stays only on your device.", neverUploaded: "Never uploaded to the server",
@@ -1091,20 +1088,20 @@
           linkCopied: "Link copied", copiedCode: "Code copied", finished: "Finished", airing: "Releasing", upcoming: "Upcoming", hiatus: "On hiatus", cancelled: "Cancelled", unknown: "Unknown status",
         },
         ru: {
-          navHome: "Главная", navCatalog: "Каталог", navTogether: "Вместе", joinRoom: "Войти в комнату", profile: "Профиль", addToLibrary: "Добавить в библиотеку", addedToLibrary: "В библиотеке",
-          heroBadge: "Смотрите синхронно", heroTitle: "Найди аниме.<br>Позови друзей. <span>Смотрите вместе.</span>",
-          heroDescription: "Пауза, перемотка и скорость синхронизируются для всех. Видео остаётся на ваших устройствах.",
+          navHome: "Главная", navCatalog: "Каталог", navTogether: "С друзьями", joinRoom: "Ввести код", profile: "Профиль", friends: "Друзья", addToLibrary: "Добавить в библиотеку", addedToLibrary: "В библиотеке",
+          heroBadge: "Аниме без лишнего", heroTitle: "Найди. Открой. <span>Смотри.</span>",
+          heroDescription: "Обычный комфортный просмотр — сразу. Если захочешь, пригласишь друга уже во время серии.",
           searchPlaceholder: "Введите название аниме…", search: "Найти", popularQueries: "Популярное:",
           metricSync: "Точная синхронизация", metricSyncText: "Один таймкод для всех", metricPrivate: "Приватные файлы", metricPrivateText: "Ничего не загружается",
-          catalogKicker: "Каталог AniList", trendingNow: "Сейчас в тренде", catalogSubtitle: "Выберите тайтл и создайте комнату одним нажатием.",
+          catalogKicker: "Каталог AniList", trendingNow: "Сейчас в тренде", catalogSubtitle: "Выберите тайтл, серию — и плеер сразу готов.",
           resultsFor: "Результаты: {query}", loading: "Загрузка…", loadingFailed: "Не удалось загрузить", titlesCount: "{count} тайтлов", refresh: "Обновить",
           nothingFound: "Ничего не найдено", tryAnotherQuery: "Попробуйте другое название или проверьте написание.",
-          togetherKicker: "Watch Party", togetherTitle: "Одна комната — один момент для всех.", togetherDescription: "Отправьте другу ссылку, выберите одинаковый файл и смотрите без задержек и лишних сервисов.",
+          togetherKicker: "Watch Together", togetherTitle: "Смотри сам. Приглашай, когда захочешь.", togetherDescription: "Начни серию как на обычном аниме-сайте. Друга можно позвать прямо из плеера — пауза и таймкод синхронизируются автоматически.",
           haveCode: "У меня есть код", footerText: "Каталог на основе AniList. Видеофайлы не хранятся на сервере.",
-          newRoom: "Новая комната", createRoomTitle: "Подготовим совместный просмотр", yourName: "Ваше имя", namePlaceholder: "Как вас показывать в комнате",
+          newRoom: "Начать просмотр", createRoomTitle: "Выберите серию", yourName: "Ваше имя", namePlaceholder: "Как вас показывать в комнате", guestName: "Гость",
           episode: "Серия", episodeShort: "{count} сер.", ongoing: "Онгоинг", sharedControls: "Общее управление", sharedControlsText: "Участники смогут ставить паузу и перематывать.",
           videoVersion: "Версия видео", loadingEpisodes: "Проверяем доступные полные серии…", noFullEpisodes: "Для этого тайтла пока нет добавленных полных серий.", fullEpisodesReady: "Доступно полных серий: {count}",
-          createAndContinue: "Создать и продолжить", createRoom: "Создать комнату", creating: "Создаём…", invitation: "Приглашение", joinRoomTitle: "Войти в комнату",
+          createAndContinue: "Смотреть сейчас", createRoom: "Смотреть", creating: "Готовим плеер…", invitation: "Приглашение", joinRoomTitle: "Присоединиться к просмотру",
           joinRoomDescription: "Введите восьмизначный код, который прислал владелец комнаты.", roomCode: "Код комнаты", enterRoom: "Войти", serverError: "Ошибка сервера",
           backToCatalog: "К каталогу", copyLink: "Копировать ссылку", watchParty: "Watch Party", connecting: "Подключение…", synchronized: "Синхронизировано", reconnecting: "Переподключение…",
           roomNotFound: "Комната не найдена", chooseEpisode: "Выбрать файл серии", chooseEpisodeText: "MP4, WebM или MKV. Файл останется только на вашем устройстве.", neverUploaded: "Не загружается на сервер",
@@ -1302,11 +1299,13 @@
         const button = document.createElement("button");
         button.className = "create-room-button";
         button.type = "button";
-        button.append(makeIcon('<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>'));
+        button.append(makeIcon('<path d="m9 7 8 5-8 5V7Z" fill="currentColor"/>'));
         const buttonText = document.createElement("span");
         buttonText.textContent = t("createRoom");
         button.append(buttonText);
         button.addEventListener("click", () => openCreateRoomModal(anime));
+        poster.addEventListener("click", () => openCreateRoomModal(anime));
+        main.addEventListener("click", () => openCreateRoomModal(anime));
         actionRow.append(libraryButton, button);
         side.append(meta, actionRow);
 
@@ -1334,13 +1333,19 @@
       let selectedAnimeDetail = null;
       let currentAccount = null;
       const libraryAnimeIds = new Set();
+      const progressByAnime = new Map();
 
       async function loadAccount() {
         try {
           currentAccount = await api("/api/auth/me");
           document.querySelector("[data-account-label]").textContent = currentAccount.display_name;
           const profileData = await api("/api/profiles/me");
-          profileData.entries.forEach((entry) => libraryAnimeIds.add(entry.anime.id));
+          profileData.entries.forEach((entry) => { libraryAnimeIds.add(entry.anime.id); if(entry.episode_number)progressByAnime.set(entry.anime.id,entry.episode_number); });
+          try {
+            const dashboard = await api("/api/friends");
+            const friendsLink = document.querySelector("#friends-link"); friendsLink.hidden=false;
+            const noticeCount=dashboard.incoming.length+dashboard.room_invitations.length; const notice=document.querySelector("#friends-notice"); notice.hidden=noticeCount===0; notice.textContent=String(noticeCount);
+          } catch (error) { console.warn(error); }
           if (catalogItems.length) renderCatalogItems();
         } catch (error) {
           currentAccount = null;
@@ -1429,7 +1434,7 @@
         const poster = document.querySelector("#modal-anime-poster");
         poster.src = anime.poster_url || "";
         poster.alt = displayTitle(anime);
-        document.querySelector("#create-room-name").value = localStorage.getItem("watch-name") || "";
+        document.querySelector("#create-room-name").value = currentAccount?.display_name || t("guestName");
         episodeSelect.replaceChildren();
         sourceSelect.replaceChildren();
         availability.textContent = t("loadingEpisodes");
@@ -1450,6 +1455,8 @@
             availability.className = "source-availability error";
             return;
           }
+          const savedEpisode=progressByAnime.get(anime.id);
+          if(savedEpisode&&readyEpisodes.some((episode)=>episode.number===savedEpisode))episodeSelect.value=String(savedEpisode);
           refreshSourceOptions();
           availability.textContent = t("fullEpisodesReady", { count: readyEpisodes.length });
           availability.className = "source-availability ready";
@@ -1499,7 +1506,7 @@
         document.querySelector("#join-room-form").addEventListener("submit", (event) => {
           event.preventDefault();
           const code = document.querySelector("#join-room-code").value.replace(/[^a-z0-9]/gi, "").toUpperCase();
-          if (code.length >= 8) window.location.href = `/room/${code}`;
+          if (code.length >= 8) window.location.href = `/watch/${code}`;
         });
         document.querySelector("#join-room-code").addEventListener("input", (event) => {
           event.target.value = event.target.value.replace(/[^a-z0-9]/gi, "").toUpperCase();
@@ -1508,7 +1515,7 @@
         document.querySelector("#create-room-form").addEventListener("submit", async (event) => {
           event.preventDefault();
           if (!selectedAnime) return;
-          const name = document.querySelector("#create-room-name").value.trim();
+          const name = currentAccount?.display_name || t("guestName");
           const submit = event.submitter;
           submit.disabled = true;
           const original = submit.querySelector("span").textContent;
@@ -1522,14 +1529,14 @@
                 episode_number: Number(document.querySelector("#create-room-episode").value) || 1,
                 source_type: "auto",
                 source_id: document.querySelector("#create-room-source").value,
-                allow_members_control: document.querySelector("#create-room-controls").checked,
+                allow_members_control: true,
               }),
             });
             const code = result.room.invite_code;
             localStorage.setItem("watch-name", name);
             localStorage.setItem(`room:${code}:user-id`, result.user_id);
             localStorage.setItem(`room:${code}:name`, name);
-            window.location.href = `/room/${code}`;
+            window.location.href = `/watch/${code}`;
           } catch (error) {
             showToast(error.message, "error");
             submit.disabled = false;
