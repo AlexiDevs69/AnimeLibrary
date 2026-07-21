@@ -122,7 +122,7 @@
       }
       .header-actions { margin-left: auto; display: flex; align-items: center; gap: 10px; }
       .language-switcher { position: relative; }
-      .language-button, .header-join-button {
+      .language-button, .header-join-button, .header-account-button {
         height: 39px;
         display: inline-flex;
         align-items: center;
@@ -136,12 +136,14 @@
         transition: background .2s, border-color .2s, transform .2s;
       }
       .language-button { min-width: 75px; padding: 0 10px; }
-      .language-button:hover, .header-join-button:hover { background: rgba(255, 255, 255, .075); border-color: var(--line-strong); }
+      .language-button:hover, .header-join-button:hover, .header-account-button:hover { background: rgba(255, 255, 255, .075); border-color: var(--line-strong); }
       .language-button > svg { width: 15px; height: 15px; color: var(--muted); }
       .language-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 3px rgba(65, 217, 138, .1); }
       .header-join-button { padding: 0 15px; background: var(--yellow); color: #211605; border-color: var(--yellow); }
       .header-join-button:hover { background: #e4e0c9; border-color: #e4e0c9; transform: translateY(-1px); }
       .header-join-button svg { width: 17px; height: 17px; }
+      .header-account-button { height: 39px; padding: 0 12px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 5px; background: rgba(121, 169, 198, .07); color: #c6d9df; text-decoration: none; font-size: 12px; font-weight: 750; }
+      .header-account-button svg { width: 17px; height: 17px; }
       .language-menu {
         position: absolute;
         top: calc(100% + 9px);
@@ -369,6 +371,10 @@
       }
       .create-room-button:hover { background: var(--violet); color: #fff; transform: translateY(-1px); }
       .create-room-button svg { width: 14px; height: 14px; }
+      .library-add-button { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 7px; background: rgba(121,169,198,.06); color: var(--muted); }
+      .library-add-button:hover, .library-add-button.active { border-color: rgba(143,184,161,.38); background: rgba(95,129,124,.18); color: #b9d0bf; }
+      .library-add-button svg { width: 16px; height: 16px; }
+      .card-action-row { display: flex; align-items: center; gap: 7px; }
       .skeleton { pointer-events: none; overflow: hidden; position: relative; }
       .skeleton::after { content: ""; position: absolute; inset: 0; transform: translateX(-100%); background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .05), transparent); animation: shimmer 1.4s infinite; }
       .skeleton-poster { width: 70px; height: 98px; border-radius: 9px; background: var(--surface-3); }
@@ -773,6 +779,8 @@
         .brand-word { display: none; }
         .brand-mark { width: 33px; height: 33px; }
         .language-button { min-width: 62px; }
+        .header-account-button { width: 39px; padding: 0; justify-content: center; }
+        .header-account-button span { display: none; }
         .header-join-button { width: 39px; padding: 0; }
         .header-join-button span { display: none; }
         .home-main { width: 100%; }
@@ -855,6 +863,11 @@
               <button type="button" data-lang="ru"><span>RU</span> Русский</button>
             </div>
           </div>
+
+          <a class="header-account-button" id="account-button" href="/profile">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.7"/><path d="M5 20c.6-4 3-6 7-6s6.4 2 7 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <span data-account-label data-i18n="profile">Профіль</span>
+          </a>
 
           <button class="header-join-button" id="join-room-button" type="button">
             <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1028,7 +1041,7 @@
 
       const translations = {
         uk: {
-          navHome: "Головна", navCatalog: "Каталог", navTogether: "Разом", joinRoom: "Увійти в кімнату",
+          navHome: "Головна", navCatalog: "Каталог", navTogether: "Разом", joinRoom: "Увійти в кімнату", profile: "Профіль", addToLibrary: "Додати в бібліотеку", addedToLibrary: "У бібліотеці",
           heroBadge: "Дивіться синхронно", heroTitle: "Знайди аніме.<br>Поклич друзів. <span>Дивіться разом.</span>",
           heroDescription: "Пауза, перемотування й швидкість синхронізуються для всіх. Відео залишається на ваших пристроях.",
           searchPlaceholder: "Введіть назву аніме…", search: "Знайти", popularQueries: "Популярне:",
@@ -1053,7 +1066,7 @@
           linkCopied: "Посилання скопійовано", copiedCode: "Код скопійовано", finished: "Завершено", airing: "Виходить", upcoming: "Анонсовано", hiatus: "Призупинено", cancelled: "Скасовано", unknown: "Статус невідомий",
         },
         en: {
-          navHome: "Home", navCatalog: "Catalog", navTogether: "Together", joinRoom: "Join a room",
+          navHome: "Home", navCatalog: "Catalog", navTogether: "Together", joinRoom: "Join a room", profile: "Profile", addToLibrary: "Add to library", addedToLibrary: "In library",
           heroBadge: "Watch in sync", heroTitle: "Find an anime.<br>Invite friends. <span>Watch together.</span>",
           heroDescription: "Pause, seeking, and playback speed stay synchronized for everyone. Video remains on your devices.",
           searchPlaceholder: "Enter an anime title…", search: "Search", popularQueries: "Popular:",
@@ -1078,7 +1091,7 @@
           linkCopied: "Link copied", copiedCode: "Code copied", finished: "Finished", airing: "Releasing", upcoming: "Upcoming", hiatus: "On hiatus", cancelled: "Cancelled", unknown: "Unknown status",
         },
         ru: {
-          navHome: "Главная", navCatalog: "Каталог", navTogether: "Вместе", joinRoom: "Войти в комнату",
+          navHome: "Главная", navCatalog: "Каталог", navTogether: "Вместе", joinRoom: "Войти в комнату", profile: "Профиль", addToLibrary: "Добавить в библиотеку", addedToLibrary: "В библиотеке",
           heroBadge: "Смотрите синхронно", heroTitle: "Найди аниме.<br>Позови друзей. <span>Смотрите вместе.</span>",
           heroDescription: "Пауза, перемотка и скорость синхронизируются для всех. Видео остаётся на ваших устройствах.",
           searchPlaceholder: "Введите название аниме…", search: "Найти", popularQueries: "Популярное:",
@@ -1174,7 +1187,11 @@
           headers: { "Content-Type": "application/json", ...(options.headers || {}) },
         });
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.detail || t("serverError"));
+        if (!response.ok) {
+          const error = new Error(data.detail || t("serverError"));
+          error.status = response.status;
+          throw error;
+        }
         return data;
       }
 
@@ -1259,6 +1276,29 @@
         meta.className = "anime-meta";
         const episodeLabel = anime.episodes_count ? t("episodeShort", { count: anime.episodes_count }) : t("ongoing");
         meta.textContent = [anime.year, episodeLabel].filter(Boolean).join(" · ");
+        const actionRow = document.createElement("div");
+        actionRow.className = "card-action-row";
+        const libraryButton = document.createElement("button");
+        libraryButton.className = `library-add-button${libraryAnimeIds.has(anime.id) ? " active" : ""}`;
+        libraryButton.type = "button";
+        libraryButton.title = libraryAnimeIds.has(anime.id) ? t("addedToLibrary") : t("addToLibrary");
+        libraryButton.append(makeIcon('<path d="M6 4h12v16l-6-3-6 3V4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>'));
+        libraryButton.addEventListener("click", async () => {
+          if (!currentAccount) { window.location.href = "/profile"; return; }
+          if (libraryAnimeIds.has(anime.id)) { window.location.href = "/profile"; return; }
+          try {
+            await api(`/api/library/${anime.id}`, {
+              method: "PUT",
+              body: JSON.stringify({ status: "planned", is_favorite: false, is_pinned: false, rating: null }),
+            });
+            libraryAnimeIds.add(anime.id);
+            libraryButton.classList.add("active");
+            libraryButton.title = t("addedToLibrary");
+            showToast(t("addedToLibrary"), "success");
+          } catch (error) {
+            showToast(error.message, "error");
+          }
+        });
         const button = document.createElement("button");
         button.className = "create-room-button";
         button.type = "button";
@@ -1267,7 +1307,8 @@
         buttonText.textContent = t("createRoom");
         button.append(buttonText);
         button.addEventListener("click", () => openCreateRoomModal(anime));
-        side.append(meta, button);
+        actionRow.append(libraryButton, button);
+        side.append(meta, actionRow);
 
         article.append(poster, main, side);
         return article;
@@ -1291,6 +1332,21 @@
       let currentQuery = "";
       let selectedAnime = null;
       let selectedAnimeDetail = null;
+      let currentAccount = null;
+      const libraryAnimeIds = new Set();
+
+      async function loadAccount() {
+        try {
+          currentAccount = await api("/api/auth/me");
+          document.querySelector("[data-account-label]").textContent = currentAccount.display_name;
+          const profileData = await api("/api/profiles/me");
+          profileData.entries.forEach((entry) => libraryAnimeIds.add(entry.anime.id));
+          if (catalogItems.length) renderCatalogItems();
+        } catch (error) {
+          currentAccount = null;
+          if (error.status !== 401) console.warn(error);
+        }
+      }
 
       function renderCatalogItems() {
         const grid = document.querySelector("#anime-grid");
@@ -1741,6 +1797,7 @@
       initLanguageSwitcher();
       if (page === "home") initHome();
       if (page === "room") initRoom();
+      loadAccount();
     </script>
   </body>
 </html>
