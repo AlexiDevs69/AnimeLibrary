@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile, status
 from sqlalchemy import delete, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,7 +20,8 @@ from app.auth import (
     verify_password,
 )
 from app.database import get_db
-from app.models import Anime, AnimeLibraryEntry, User, WatchProgress
+from app.models import Anime, AnimeLibraryEntry, ProfileImage, User, WatchProgress
+from app.profile_images import MAX_UPLOAD_BYTES, ProfileImageError, process_profile_image
 from app.schemas import (
     AccountOut,
     AnimeOut,
@@ -142,6 +143,75 @@ async def update_profile(
     user.is_profile_private = payload.is_profile_private
     await db.commit()
     return account_out(user)
+
+
+@router.post("/api/profiles/me/images/{kind}", response_model=AccountOut)
+async def upload_profile_image(
+    kind: str,
+    image: UploadFile = File(...),
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+) -> AccountOut:
+    if kind not in {"avatar", "banner"}:
+        raise HTTPException(status_code=404, detail="Невідомий тип зображення")
+    if image.content_type not in {"image/jpeg", "image/png", "image/webp"}:
+        raise HTTPException(status_code=415, detail="Підтримуються лише PNG, JPEG та WebP")
+
+    payload = await image.read(MAX_UPLOAD_BYTES + 1)
+    await image.close()
+    try:
+        processed = process_profile_image(payload, kind)  # type: ignore[arg-type]
+    except ProfileImageError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    old_result = await db.execute(
+        select(ProfileImage).where(
+            ProfileImage.user_id == user.id,
+            ProfileImage.kind == kind,
+        )
+    )
+    old_image = old_result.scalar_one_or_none()
+    if old_image is not None:
+        await db.delete(old_image)
+        await db.flush()
+
+    stored = ProfileImage(
+        user_id=user.id,
+        kind=kind,
+        mime_type=processed.mime_type,
+        content=processed.content,
+        width=processed.width,
+        height=processed.height,
+    )
+    db.add(stored)
+    await db.flush()
+    media_url = f"/api/media/profile/{stored.id}"
+    if kind == "avatar":
+        user.avatar_url = media_url
+    else:
+        user.banner_url = media_url
+    await db.commit()
+    return account_out(user)
+
+
+@router.get("/api/media/profile/{image_id}", include_in_schema=False)
+async def profile_image(
+    image_id: uuid.UUID,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    stored = await db.get(ProfileImage, image_id)
+    if stored is None:
+        raise HTTPException(status_code=404, detail="Зображення не знайдено")
+    etag = f'"{stored.id}"'
+    headers = {
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "ETag": etag,
+        "X-Content-Type-Options": "nosniff",
+    }
+    if request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers=headers)
+    return Response(content=stored.content, media_type=stored.mime_type, headers=headers)
 
 
 async def build_profile(
