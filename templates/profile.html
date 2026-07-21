@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0a0e12">
+    <title>Profile · {{ app_name }}</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #080b0e;
+        --panel: #0d1216;
+        --panel-2: #11181d;
+        --line: rgba(180, 205, 218, .12);
+        --line-strong: rgba(180, 205, 218, .2);
+        --text: #edf3f3;
+        --muted: #91a0a6;
+        --blue: #9bc8dc;
+        --blue-deep: #406a7d;
+        --green: #91b58c;
+        --green-deep: #334d39;
+        --danger: #d67c7c;
+        --shadow: 0 24px 70px rgba(0, 0, 0, .36);
+      }
+      * { box-sizing: border-box; }
+      html { background: var(--bg); scroll-behavior: smooth; }
+      body { margin: 0; min-height: 100vh; background: radial-gradient(circle at 75% 12%, rgba(72, 111, 124, .12), transparent 28rem), var(--bg); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      button, input, textarea, select { font: inherit; }
+      button, a { -webkit-tap-highlight-color: transparent; }
+      button { color: inherit; }
+      a { color: inherit; text-decoration: none; }
+      [hidden] { display: none !important; }
+
+      .topbar { height: 70px; position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; padding: 0 clamp(18px, 4vw, 56px); background: rgba(7, 10, 13, .9); border-bottom: 1px solid var(--line); backdrop-filter: blur(18px); }
+      .back-link, .top-action { min-height: 40px; display: inline-flex; align-items: center; gap: 10px; border-radius: 10px; }
+      .back-link { font-weight: 750; letter-spacing: -.02em; }
+      .back-link svg, .top-action svg { width: 18px; height: 18px; }
+      .brand-dot { width: 27px; height: 27px; display: grid; place-items: center; border: 1px solid rgba(155, 200, 220, .3); background: #101a20; border-radius: 8px 8px 8px 3px; color: var(--blue); }
+      .brand-dot svg { width: 14px; }
+      .top-actions { display: flex; align-items: center; gap: 10px; }
+      .lang-select, .top-action { border: 1px solid var(--line); background: rgba(255,255,255,.025); color: var(--muted); }
+      .lang-select { height: 40px; padding: 0 12px; border-radius: 9px; }
+      .top-action { padding: 0 14px; cursor: pointer; }
+      .top-action:hover { color: var(--text); border-color: var(--line-strong); }
+
+      .profile-hero { position: relative; min-height: 285px; overflow: hidden; border-bottom: 1px solid var(--line); background: linear-gradient(120deg, #1c343d, #304b45 55%, #6f8060); }
+      .profile-hero::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5,9,12,.84) 0%, rgba(5,9,12,.36) 56%, rgba(5,9,12,.54) 100%), linear-gradient(0deg, #090d10 0%, transparent 55%); }
+      .profile-hero::after { content: ""; position: absolute; inset: 0; opacity: .08; background-image: repeating-linear-gradient(105deg, transparent 0 18px, #fff 19px, transparent 20px 42px); mix-blend-mode: soft-light; }
+      .hero-inner { position: relative; z-index: 2; max-width: 1480px; min-height: 285px; margin: auto; padding: 76px clamp(20px, 4vw, 60px) 34px; display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; }
+      .identity { display: flex; align-items: flex-end; gap: 22px; min-width: 0; }
+      .avatar { width: 122px; height: 122px; flex: none; position: relative; overflow: hidden; display: grid; place-items: center; border: 3px solid rgba(239,246,246,.86); border-radius: 19px 19px 19px 6px; background: #132027; box-shadow: 0 20px 42px rgba(0,0,0,.38); font: 800 40px/1 Georgia, serif; color: var(--blue); }
+      .avatar img { width: 100%; height: 100%; object-fit: cover; }
+      .identity-copy { min-width: 0; padding-bottom: 7px; }
+      .eyebrow { display: inline-flex; align-items: center; gap: 7px; margin-bottom: 7px; color: #c2d9df; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .15em; }
+      .identity h1 { margin: 0; max-width: 700px; overflow: hidden; text-overflow: ellipsis; font: 750 clamp(28px, 4vw, 46px)/1.05 Georgia, "Times New Roman", serif; letter-spacing: -.035em; }
+      .username { margin: 7px 0 0; color: rgba(237,243,243,.7); font-size: 14px; }
+      .bio { max-width: 660px; margin: 12px 0 0; color: #c2cbce; font-size: 14px; line-height: 1.55; }
+      .hero-actions { display: flex; gap: 10px; padding-bottom: 7px; }
+      .button { min-height: 42px; border: 1px solid var(--line-strong); border-radius: 10px; padding: 0 15px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; background: rgba(7,11,14,.58); color: var(--text); font-weight: 750; cursor: pointer; backdrop-filter: blur(10px); }
+      .button svg { width: 17px; height: 17px; }
+      .button:hover { border-color: rgba(155,200,220,.46); background: rgba(17,28,33,.76); }
+      .button.primary { background: #dbe9e9; border-color: #dbe9e9; color: #101619; }
+      .button.danger { color: #e6a0a0; border-color: rgba(214,124,124,.26); }
+
+      .page { max-width: 1480px; margin: 0 auto; padding: 30px clamp(20px, 4vw, 60px) 80px; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 28px; }
+      .content { min-width: 0; }
+      .tabs { height: 44px; display: flex; gap: 28px; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
+      .tab { position: relative; display: flex; align-items: flex-start; padding: 0 2px; color: var(--muted); font-size: 13px; font-weight: 750; }
+      .tab.active { color: var(--text); }
+      .tab.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: linear-gradient(90deg, var(--blue), var(--green)); }
+      .section { margin-top: 28px; }
+      .section-heading { min-height: 34px; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+      .section-heading h2 { margin: 0; font: 700 21px/1.1 Georgia, "Times New Roman", serif; letter-spacing: -.015em; }
+      .count { display: inline-grid; place-items: center; min-width: 24px; height: 22px; margin-left: 6px; padding: 0 7px; border-radius: 7px; background: rgba(155,200,220,.1); color: var(--blue); font: 750 11px/1 system-ui; }
+      .filter { height: 36px; padding: 0 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: var(--muted); font-size: 12px; }
+
+      .anime-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px; }
+      .anime-card { min-width: 0; position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 12px 12px 12px 4px; background: var(--panel); transition: transform .18s ease, border-color .18s ease; }
+      .anime-card:hover { transform: translateY(-2px); border-color: rgba(155,200,220,.3); }
+      .card-cover { aspect-ratio: 16 / 10; position: relative; overflow: hidden; background: #142028; }
+      .card-cover img { width: 100%; height: 100%; object-fit: cover; object-position: center 24%; transition: transform .35s ease; }
+      .anime-card:hover .card-cover img { transform: scale(1.035); }
+      .card-cover::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(7,10,12,.9), transparent 68%); }
+      .card-status { position: absolute; z-index: 2; left: 9px; bottom: 8px; padding: 5px 7px; border: 1px solid rgba(255,255,255,.16); border-radius: 6px; background: rgba(6,10,12,.7); color: #d9e5e6; font-size: 10px; font-weight: 750; backdrop-filter: blur(8px); }
+      .card-icons { position: absolute; z-index: 3; top: 8px; right: 8px; display: flex; gap: 5px; }
+      .icon-button { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid rgba(255,255,255,.15); border-radius: 8px; background: rgba(6,10,12,.72); color: #d5e1e2; cursor: pointer; backdrop-filter: blur(8px); }
+      .icon-button svg { width: 15px; height: 15px; }
+      .icon-button.active { color: #fff; background: rgba(73,108,89,.86); border-color: rgba(145,181,140,.56); }
+      .icon-button.favorite.active { color: #f0b5b5; background: rgba(100,48,52,.84); border-color: rgba(214,124,124,.5); }
+      .card-body { padding: 11px 12px 12px; }
+      .card-title { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; font-weight: 800; }
+      .card-meta { min-height: 18px; margin-top: 5px; color: var(--muted); font-size: 10px; }
+      .card-controls { margin-top: 10px; display: flex; gap: 6px; }
+      .status-select { min-width: 0; flex: 1; height: 31px; border: 1px solid var(--line); border-radius: 7px; background: #0a0f12; color: #bbc7cb; font-size: 10px; padding: 0 7px; }
+      .remove-button { width: 31px; border: 1px solid var(--line); border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; }
+      .remove-button:hover { color: var(--danger); }
+      .progress-track { height: 3px; margin-top: 10px; overflow: hidden; border-radius: 3px; background: rgba(255,255,255,.08); }
+      .progress-track span { display: block; height: 100%; background: linear-gradient(90deg, var(--blue-deep), var(--green)); }
+
+      .pinned-grid .anime-card:first-child { grid-column: span 2; }
+      .pinned-grid .anime-card:first-child .card-cover { aspect-ratio: 16 / 7.8; }
+      .empty { min-height: 160px; padding: 34px; display: grid; place-items: center; text-align: center; border: 1px dashed var(--line-strong); border-radius: 12px; background: linear-gradient(135deg, rgba(155,200,220,.035), rgba(145,181,140,.025)); color: var(--muted); }
+      .empty strong { display: block; margin-bottom: 7px; color: #d8e1e2; font: 700 17px Georgia, serif; }
+
+      .sidebar { min-width: 0; display: grid; align-content: start; gap: 16px; }
+      .side-card { border: 1px solid var(--line); border-radius: 13px 13px 13px 5px; background: rgba(13,18,22,.86); box-shadow: 0 18px 44px rgba(0,0,0,.18); }
+      .side-title { height: 52px; padding: 0 18px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); font-size: 13px; font-weight: 800; }
+      .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--line); }
+      .stat { min-height: 100px; padding: 17px; background: var(--panel); }
+      .stat strong { display: block; font: 700 25px/1 Georgia, serif; color: #e4eeee; }
+      .stat span { display: block; margin-top: 8px; color: var(--muted); font-size: 10px; line-height: 1.35; }
+      .recent-list { padding: 7px 0; }
+      .recent-item { display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 10px; padding: 10px 15px; align-items: center; }
+      .recent-item img { width: 42px; height: 50px; object-fit: cover; border-radius: 7px 7px 7px 2px; background: #142028; }
+      .recent-item strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+      .recent-item span { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; }
+      .privacy-note { padding: 26px 20px; color: var(--muted); text-align: center; line-height: 1.5; font-size: 13px; }
+
+      .auth-shell { min-height: calc(100vh - 70px); display: grid; place-items: center; padding: 30px 18px; }
+      .auth-card { width: min(460px, 100%); overflow: hidden; border: 1px solid var(--line-strong); border-radius: 18px 18px 18px 6px; background: rgba(13,18,22,.94); box-shadow: var(--shadow); }
+      .auth-art { min-height: 138px; padding: 30px; display: flex; align-items: flex-end; background: linear-gradient(120deg, rgba(53,83,95,.92), rgba(82,108,84,.9)), repeating-linear-gradient(110deg, transparent 0 16px, rgba(255,255,255,.05) 17px 18px); }
+      .auth-art h1 { margin: 0; font: 700 30px/1.05 Georgia, serif; }
+      .auth-body { padding: 22px; }
+      .auth-tabs { display: grid; grid-template-columns: 1fr 1fr; padding: 4px; margin-bottom: 18px; border: 1px solid var(--line); border-radius: 10px; background: #090d10; }
+      .auth-tab { height: 36px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 750; }
+      .auth-tab.active { background: #172127; color: var(--text); }
+      .form { display: grid; gap: 13px; }
+      .form label { display: grid; gap: 6px; color: #b7c2c6; font-size: 11px; font-weight: 700; }
+      .form input, .form textarea { width: 100%; border: 1px solid var(--line); border-radius: 9px; outline: 0; background: #090e11; color: var(--text); padding: 11px 12px; }
+      .form textarea { min-height: 88px; resize: vertical; }
+      .form input:focus, .form textarea:focus { border-color: rgba(155,200,220,.48); box-shadow: 0 0 0 3px rgba(155,200,220,.06); }
+      .form-error { min-height: 17px; margin: 0; color: #e09898; font-size: 11px; }
+      .form .button { width: 100%; margin-top: 2px; }
+      .checkbox { display: flex !important; grid-template-columns: none !important; align-items: center; gap: 9px !important; }
+      .checkbox input { width: 16px; height: 16px; }
+
+      .modal { position: fixed; z-index: 80; inset: 0; padding: 20px; display: grid; place-items: center; background: rgba(3,6,8,.74); backdrop-filter: blur(10px); }
+      .modal-card { width: min(520px, 100%); max-height: calc(100vh - 40px); overflow: auto; border: 1px solid var(--line-strong); border-radius: 16px 16px 16px 6px; background: #0e1418; box-shadow: var(--shadow); }
+      .modal-head { min-height: 62px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); }
+      .modal-head h2 { margin: 0; font: 700 19px Georgia, serif; }
+      .modal-close { width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; }
+      .modal-body { padding: 20px; }
+      .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+      .toast { position: fixed; z-index: 100; right: 20px; bottom: 20px; max-width: min(380px, calc(100vw - 40px)); padding: 12px 15px; border: 1px solid var(--line-strong); border-radius: 10px; background: #172127; box-shadow: var(--shadow); color: #dce7e8; font-size: 12px; opacity: 0; transform: translateY(10px); pointer-events: none; transition: .2s ease; }
+      .toast.show { opacity: 1; transform: none; }
+      .toast.error { border-color: rgba(214,124,124,.35); color: #efb2b2; }
+
+      @media (max-width: 1100px) {
+        .page { grid-template-columns: 1fr; }
+        .sidebar { grid-template-columns: 1fr 1fr; }
+        .anime-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+      }
+      @media (max-width: 760px) {
+        .topbar { height: 60px; }
+        .top-action span { display: none; }
+        .profile-hero, .hero-inner { min-height: 330px; }
+        .hero-inner { padding-top: 56px; align-items: flex-end; }
+        .identity { align-items: center; }
+        .avatar { width: 90px; height: 90px; border-radius: 15px 15px 15px 5px; }
+        .identity h1 { font-size: 29px; }
+        .hero-actions { position: absolute; right: 20px; top: 18px; }
+        .hero-actions .button span { display: none; }
+        .anime-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+        .pinned-grid .anime-card:first-child { grid-column: span 2; }
+        .sidebar { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 480px) {
+        .hero-inner { padding-left: 16px; padding-right: 16px; }
+        .identity { gap: 13px; align-items: flex-end; }
+        .avatar { width: 76px; height: 76px; }
+        .identity h1 { font-size: 25px; }
+        .bio { display: none; }
+        .page { padding-left: 13px; padding-right: 13px; }
+        .anime-grid { gap: 8px; }
+        .card-body { padding: 9px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="back-link" href="/">
+        <span class="brand-dot"><svg viewBox="0 0 24 24" fill="none"><path d="m15 18-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <span>AnimeLibrary</span>
+      </a>
+      <div class="top-actions">
+        <select class="lang-select" id="language" aria-label="Language">
+          <option value="uk">UA</option><option value="en">EN</option><option value="ru">RU</option>
+        </select>
+        <button class="top-action" id="copy-profile" type="button" hidden>
+          <svg viewBox="0 0 24 24" fill="none"><path d="M8 12.5 12 16.5l4-4M12 4v12M5 19h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span data-i18n="share">Поділитися</span>
+        </button>
+      </div>
+    </header>
+
+    <div id="auth-view" class="auth-shell" hidden>
+      <section class="auth-card">
+        <div class="auth-art"><h1 data-i18n="authTitle">Твоя аніме-бібліотека.<br>Тепер справді твоя.</h1></div>
+        <div class="auth-body">
+          <div class="auth-tabs">
+            <button class="auth-tab active" type="button" data-auth-tab="login" data-i18n="login">Увійти</button>
+            <button class="auth-tab" type="button" data-auth-tab="register" data-i18n="register">Реєстрація</button>
+          </div>
+          <form class="form" id="login-form">
+            <label><span data-i18n="loginOrEmail">Логін або email</span><input name="login" autocomplete="username" required minlength="3"></label>
+            <label><span data-i18n="password">Пароль</span><input name="password" type="password" autocomplete="current-password" required></label>
+            <p class="form-error"></p>
+            <button class="button primary" type="submit" data-i18n="enterProfile">Увійти в профіль</button>
+          </form>
+          <form class="form" id="register-form" hidden>
+            <label><span data-i18n="displayName">Ім’я</span><input name="display_name" autocomplete="name" required minlength="2" maxlength="40"></label>
+            <label><span data-i18n="username">Логін</span><input name="username" autocomplete="username" pattern="[a-zA-Z0-9_]{3,24}" required></label>
+            <label><span>Email</span><input name="email" type="email" autocomplete="email" required></label>
+            <label><span data-i18n="passwordHint">Пароль · мінімум 10 символів</span><input name="password" type="password" autocomplete="new-password" minlength="10" required></label>
+            <p class="form-error"></p>
+            <button class="button primary" type="submit" data-i18n="createProfile">Створити профіль</button>
+          </form>
+        </div>
+      </section>
+    </div>
+
+    <div id="profile-view" hidden>
+      <section class="profile-hero" id="profile-hero">
+        <div class="hero-inner">
+          <div class="identity">
+            <div class="avatar" id="avatar"><span>AL</span></div>
+            <div class="identity-copy">
+              <span class="eyebrow" id="profile-label">Anime profile</span>
+              <h1 id="display-name">—</h1>
+              <p class="username" id="username">@—</p>
+              <p class="bio" id="bio"></p>
+            </div>
+          </div>
+          <div class="hero-actions" id="owner-actions" hidden>
+            <button class="button" id="edit-profile" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="m4 16-.5 4.5L8 20l11-11-4-4L4 16Zm9.5-9.5 4 4" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span data-i18n="editProfile">Редагувати</span></button>
+            <button class="button danger" id="logout" type="button"><svg viewBox="0 0 24 24" fill="none"><path d="M10 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4M14 8l4 4-4 4M9 12h9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-i18n="logout">Вийти</span></button>
+          </div>
+        </div>
+      </section>
+
+      <main class="page">
+        <div class="content">
+          <nav class="tabs"><span class="tab active" data-i18n="library">Бібліотека</span></nav>
+          <div id="private-message" class="empty" hidden><div><strong data-i18n="privateProfile">Приватний профіль</strong><span data-i18n="privateText">Власник приховав свою бібліотеку й активність.</span></div></div>
+
+          <section class="section" id="pinned-section">
+            <div class="section-heading"><h2><span data-i18n="pinned">Закріплені</span><span class="count" id="pinned-count">0</span></h2></div>
+            <div class="anime-grid pinned-grid" id="pinned-grid"></div>
+          </section>
+
+          <section class="section">
+            <div class="section-heading">
+              <h2><span data-i18n="library">Бібліотека</span><span class="count" id="library-count">0</span></h2>
+              <select class="filter" id="library-filter">
+                <option value="all" data-i18n="all">Усі</option>
+                <option value="watching" data-i18n="watching">Дивлюся</option>
+                <option value="planned" data-i18n="planned">Заплановано</option>
+                <option value="completed" data-i18n="completed">Переглянуто</option>
+                <option value="on_hold" data-i18n="onHold">Відкладено</option>
+                <option value="dropped" data-i18n="dropped">Кинуто</option>
+              </select>
+            </div>
+            <div class="anime-grid" id="library-grid"></div>
+            <div class="empty" id="library-empty" hidden><div><strong data-i18n="emptyLibrary">Тут поки порожньо</strong><span data-i18n="emptyLibraryText">Додайте аніме з каталогу — обкладинки з’являться тут.</span></div></div>
+          </section>
+        </div>
+
+        <aside class="sidebar">
+          <section class="side-card">
+            <div class="side-title"><span data-i18n="statistics">Статистика</span><span>⌃</span></div>
+            <div class="stats">
+              <div class="stat"><strong id="stat-hours">0</strong><span data-i18n="watchHours">годин перегляду</span></div>
+              <div class="stat"><strong id="stat-episodes">0</strong><span data-i18n="watchedEpisodes">переглянутих серій</span></div>
+              <div class="stat"><strong id="stat-completed">0</strong><span data-i18n="completedTitles">завершених тайтлів</span></div>
+              <div class="stat"><strong id="stat-favorites">0</strong><span data-i18n="favoriteTitles">улюблених аніме</span></div>
+            </div>
+          </section>
+          <section class="side-card">
+            <div class="side-title"><span data-i18n="recentActivity">Недавня активність</span><span>⌃</span></div>
+            <div class="recent-list" id="recent-list"></div>
+            <p class="privacy-note" id="recent-empty" data-i18n="noActivity">Перегляди з кімнат з’являться тут автоматично.</p>
+          </section>
+        </aside>
+      </main>
+    </div>
+
+    <div class="modal" id="edit-modal" hidden>
+      <section class="modal-card" role="dialog" aria-modal="true">
+        <header class="modal-head"><h2 data-i18n="editProfile">Редагувати профіль</h2><button class="modal-close" type="button" data-modal-close>×</button></header>
+        <div class="modal-body">
+          <form class="form" id="edit-form">
+            <label><span data-i18n="displayName">Ім’я</span><input name="display_name" required minlength="2" maxlength="40"></label>
+            <label><span data-i18n="about">Про себе</span><textarea name="bio" maxlength="300"></textarea></label>
+            <label><span data-i18n="avatarUrl">HTTPS-посилання на аватар</span><input name="avatar_url" type="url" placeholder="https://..."></label>
+            <label><span data-i18n="bannerUrl">HTTPS-посилання на банер</span><input name="banner_url" type="url" placeholder="https://..."></label>
+            <label class="checkbox"><input name="is_profile_private" type="checkbox"><span data-i18n="makePrivate">Приховати бібліотеку від інших</span></label>
+            <p class="form-error"></p>
+            <div class="modal-actions"><button class="button" type="button" data-modal-close data-i18n="cancel">Скасувати</button><button class="button primary" type="submit" data-i18n="save">Зберегти</button></div>
+          </form>
+        </div>
+      </section>
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <script>
+      const requestedUsername = {{ profile_username | tojson }};
+      const translations = {
+        uk: { share:"Поділитися", authTitle:"Твоя аніме-бібліотека.<br>Тепер справді твоя.", login:"Увійти", register:"Реєстрація", loginOrEmail:"Логін або email", password:"Пароль", enterProfile:"Увійти в профіль", displayName:"Ім’я", username:"Логін", passwordHint:"Пароль · мінімум 10 символів", createProfile:"Створити профіль", editProfile:"Редагувати", logout:"Вийти", library:"Бібліотека", privateProfile:"Приватний профіль", privateText:"Власник приховав свою бібліотеку й активність.", pinned:"Закріплені", all:"Усі", watching:"Дивлюся", planned:"Заплановано", completed:"Переглянуто", onHold:"Відкладено", dropped:"Кинуто", emptyLibrary:"Тут поки порожньо", emptyLibraryText:"Додайте аніме з каталогу — обкладинки з’являться тут.", statistics:"Статистика", watchHours:"годин перегляду", watchedEpisodes:"переглянутих серій", completedTitles:"завершених тайтлів", favoriteTitles:"улюблених аніме", recentActivity:"Недавня активність", noActivity:"Перегляди з кімнат з’являться тут автоматично.", about:"Про себе", avatarUrl:"HTTPS-посилання на аватар", bannerUrl:"HTTPS-посилання на банер", makePrivate:"Приховати бібліотеку від інших", cancel:"Скасувати", save:"Зберегти", episode:"Серія {n}", minutes:"{n} хв", profileCopied:"Посилання скопійовано", saved:"Збережено", removed:"Видалено з бібліотеки", serverError:"Помилка сервера", profile:"Профіль", memberSince:"У бібліотеці з {year}" },
+        en: { share:"Share", authTitle:"Your anime library.<br>Now truly yours.", login:"Sign in", register:"Register", loginOrEmail:"Username or email", password:"Password", enterProfile:"Open profile", displayName:"Display name", username:"Username", passwordHint:"Password · at least 10 characters", createProfile:"Create profile", editProfile:"Edit profile", logout:"Sign out", library:"Library", privateProfile:"Private profile", privateText:"The owner has hidden their library and activity.", pinned:"Pinned", all:"All", watching:"Watching", planned:"Planned", completed:"Completed", onHold:"On hold", dropped:"Dropped", emptyLibrary:"Nothing here yet", emptyLibraryText:"Add anime from the catalog and its covers will appear here.", statistics:"Statistics", watchHours:"watch hours", watchedEpisodes:"episodes watched", completedTitles:"completed titles", favoriteTitles:"favorite anime", recentActivity:"Recent activity", noActivity:"Room watches will appear here automatically.", about:"About", avatarUrl:"HTTPS avatar URL", bannerUrl:"HTTPS banner URL", makePrivate:"Hide library from other people", cancel:"Cancel", save:"Save", episode:"Episode {n}", minutes:"{n} min", profileCopied:"Profile link copied", saved:"Saved", removed:"Removed from library", serverError:"Server error", profile:"Profile", memberSince:"Library member since {year}" },
+        ru: { share:"Поделиться", authTitle:"Твоя аниме-библиотека.<br>Теперь действительно твоя.", login:"Войти", register:"Регистрация", loginOrEmail:"Логин или email", password:"Пароль", enterProfile:"Войти в профиль", displayName:"Имя", username:"Логин", passwordHint:"Пароль · минимум 10 символов", createProfile:"Создать профиль", editProfile:"Редактировать", logout:"Выйти", library:"Библиотека", privateProfile:"Приватный профиль", privateText:"Владелец скрыл свою библиотеку и активность.", pinned:"Закреплённые", all:"Все", watching:"Смотрю", planned:"Запланировано", completed:"Просмотрено", onHold:"Отложено", dropped:"Брошено", emptyLibrary:"Здесь пока пусто", emptyLibraryText:"Добавьте аниме из каталога — обложки появятся здесь.", statistics:"Статистика", watchHours:"часов просмотра", watchedEpisodes:"просмотренных серий", completedTitles:"завершённых тайтлов", favoriteTitles:"любимых аниме", recentActivity:"Недавняя активность", noActivity:"Просмотры из комнат появятся здесь автоматически.", about:"О себе", avatarUrl:"HTTPS-ссылка на аватар", bannerUrl:"HTTPS-ссылка на баннер", makePrivate:"Скрыть библиотеку от других", cancel:"Отмена", save:"Сохранить", episode:"Серия {n}", minutes:"{n} мин", profileCopied:"Ссылка скопирована", saved:"Сохранено", removed:"Удалено из библиотеки", serverError:"Ошибка сервера", profile:"Профиль", memberSince:"В библиотеке с {year}" },
+      };
+      let language = localStorage.getItem("anime-library-language") || "uk";
+      if (!translations[language]) language = "uk";
+      let profile = null;
+      const t = (key, values = {}) => {
+        let text = translations[language][key] || translations.uk[key] || key;
+        Object.entries(values).forEach(([name, value]) => { text = text.replaceAll(`{${name}}`, value); });
+        return text;
+      };
+      function applyLanguage() {
+        document.documentElement.lang = language;
+        document.querySelector("#language").value = language;
+        document.querySelectorAll("[data-i18n]").forEach((node) => { node.textContent = t(node.dataset.i18n); });
+        document.querySelector(".auth-art h1").innerHTML = t("authTitle");
+        if (profile) renderProfile(profile);
+      }
+      async function api(path, options = {}) {
+        const response = await fetch(path, { ...options, headers: { "Content-Type": "application/json", ...(options.headers || {}) } });
+        if (response.status === 204) return null;
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) { const error = new Error(data.detail || t("serverError")); error.status = response.status; throw error; }
+        return data;
+      }
+      function showToast(message, error = false) {
+        const toast = document.querySelector("#toast"); toast.textContent = message; toast.className = `toast show${error ? " error" : ""}`;
+        clearTimeout(showToast.timer); showToast.timer = setTimeout(() => toast.className = "toast", 2600);
+      }
+      const displayTitle = (anime) => anime.title_english || anime.title_romaji || anime.title_native || "Anime";
+      const statusLabel = (status) => t({ watching:"watching", planned:"planned", completed:"completed", on_hold:"onHold", dropped:"dropped" }[status] || "planned");
+      function option(value, label, selected) { const item = document.createElement("option"); item.value = value; item.textContent = label; item.selected = selected; return item; }
+      function iconButton(className, title, svg) { const button = document.createElement("button"); button.type = "button"; button.className = `icon-button ${className}`; button.title = title; button.innerHTML = svg; return button; }
+      async function saveEntry(entry) {
+        await api(`/api/library/${entry.anime.id}`, { method:"PUT", body:JSON.stringify({ status:entry.status, is_favorite:entry.is_favorite, is_pinned:entry.is_pinned, rating:entry.rating }) });
+        showToast(t("saved")); await loadProfile();
+      }
+      function animeCard(entry) {
+        const card = document.createElement("article"); card.className = "anime-card";
+        const cover = document.createElement("div"); cover.className = "card-cover";
+        const image = document.createElement("img"); image.loading = "lazy"; image.src = entry.anime.banner_url || entry.anime.poster_url || ""; image.alt = displayTitle(entry.anime); cover.append(image);
+        const badge = document.createElement("span"); badge.className = "card-status"; badge.textContent = entry.episode_number ? t("episode", { n:entry.episode_number }) : statusLabel(entry.status); cover.append(badge);
+        if (profile.is_owner) {
+          const icons = document.createElement("div"); icons.className = "card-icons";
+          const favorite = iconButton(`favorite${entry.is_favorite ? " active" : ""}`, "Favorite", '<svg viewBox="0 0 24 24" fill="none"><path d="M20.8 5.8c-2.2-2.3-5.7-1.8-7.3.7L12 8.7l-1.5-2.2C8.9 4 5.4 3.5 3.2 5.8.9 8.2 1 12 3.5 14.4L12 22l8.5-7.6c2.5-2.4 2.6-6.2.3-8.6Z" stroke="currentColor" stroke-width="1.6"/></svg>');
+          favorite.addEventListener("click", () => { entry.is_favorite = !entry.is_favorite; saveEntry(entry).catch((e) => showToast(e.message, true)); });
+          const pin = iconButton(entry.is_pinned ? "active" : "", "Pin", '<svg viewBox="0 0 24 24" fill="none"><path d="m9 3 6 6-2 2 4 4-2 2-4-4-2 2-6-6 6-6Zm3 10-7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+          pin.addEventListener("click", () => { entry.is_pinned = !entry.is_pinned; saveEntry(entry).catch((e) => showToast(e.message, true)); });
+          icons.append(favorite, pin); cover.append(icons);
+        }
+        const body = document.createElement("div"); body.className = "card-body";
+        const title = document.createElement("a"); title.className = "card-title"; title.href = "/"; title.textContent = displayTitle(entry.anime); title.title = title.textContent;
+        const meta = document.createElement("div"); meta.className = "card-meta"; meta.textContent = [entry.anime.year, entry.anime.episodes_count ? `${entry.anime.episodes_count} ep.` : null, entry.rating ? `★ ${entry.rating}/10` : null].filter(Boolean).join(" · ");
+        body.append(title, meta);
+        if (entry.episode_number) { const track = document.createElement("div"); track.className = "progress-track"; const fill = document.createElement("span"); const duration = Math.max(1, Number(entry.anime.episode_duration || 24) * 60); fill.style.width = `${Math.min(100, Math.round(Number(entry.current_time || 0) / duration * 100))}%`; track.append(fill); body.append(track); }
+        if (profile.is_owner) {
+          const controls = document.createElement("div"); controls.className = "card-controls";
+          const select = document.createElement("select"); select.className = "status-select";
+          [["watching","watching"],["planned","planned"],["completed","completed"],["on_hold","onHold"],["dropped","dropped"]].forEach(([value,key]) => select.append(option(value,t(key),entry.status===value)));
+          select.addEventListener("change", () => { entry.status = select.value; saveEntry(entry).catch((e) => showToast(e.message, true)); });
+          const remove = document.createElement("button"); remove.type = "button"; remove.className = "remove-button"; remove.textContent = "×"; remove.addEventListener("click", async () => { try { await api(`/api/library/${entry.anime.id}`, { method:"DELETE" }); showToast(t("removed")); await loadProfile(); } catch(e) { showToast(e.message,true); } });
+          controls.append(select, remove); body.append(controls);
+        }
+        card.append(cover, body); return card;
+      }
+      function renderProfile(data) {
+        profile = data; const user = data.user; const pinned = data.entries.filter((item) => item.is_pinned);
+        document.title = `${user.display_name} · AnimeLibrary`;
+        document.querySelector("#profile-label").textContent = `${t("profile")} · ${t("memberSince", { year:new Date(user.created_at).getFullYear() })}`;
+        document.querySelector("#display-name").textContent = user.display_name; document.querySelector("#username").textContent = `@${user.username}`; document.querySelector("#bio").textContent = user.bio || "";
+        const fallbackArt = pinned[0]?.anime.banner_url || pinned[0]?.anime.poster_url || ""; const heroArt = user.banner_url || fallbackArt;
+        document.querySelector("#profile-hero").style.backgroundImage = heroArt ? `url("${heroArt.replaceAll('"','')}")` : "";
+        const avatar = document.querySelector("#avatar"); avatar.replaceChildren(); const avatarUrl = user.avatar_url || pinned[0]?.anime.poster_url;
+        if (avatarUrl) { const img = document.createElement("img"); img.src = avatarUrl; img.alt = user.display_name; avatar.append(img); } else { const span = document.createElement("span"); span.textContent = user.display_name.slice(0,2).toUpperCase(); avatar.append(span); }
+        document.querySelector("#owner-actions").hidden = !data.is_owner; document.querySelector("#copy-profile").hidden = false;
+        const isPrivate = user.is_profile_private && !data.is_owner; document.querySelector("#private-message").hidden = !isPrivate; document.querySelector("#pinned-section").hidden = isPrivate; document.querySelector("#library-filter").closest(".section").hidden = isPrivate;
+        document.querySelector("#pinned-count").textContent = pinned.length; const pinnedGrid = document.querySelector("#pinned-grid"); pinnedGrid.replaceChildren(...pinned.map(animeCard));
+        const filter = document.querySelector("#library-filter").value; const entries = data.entries.filter((item) => filter === "all" || item.status === filter);
+        document.querySelector("#library-count").textContent = data.entries.length; const grid = document.querySelector("#library-grid"); grid.replaceChildren(...entries.map(animeCard)); document.querySelector("#library-empty").hidden = entries.length > 0;
+        document.querySelector("#stat-hours").textContent = Math.round(data.stats.minutes_watched / 60); document.querySelector("#stat-episodes").textContent = data.stats.episodes_watched; document.querySelector("#stat-completed").textContent = data.stats.completed_count; document.querySelector("#stat-favorites").textContent = data.stats.favorite_count;
+        const recent = document.querySelector("#recent-list"); recent.replaceChildren(...data.recent.map((entry) => { const item = document.createElement("div"); item.className = "recent-item"; const img = document.createElement("img"); img.src = entry.anime.poster_url || ""; img.alt = ""; const copy = document.createElement("div"); const title = document.createElement("strong"); title.textContent = displayTitle(entry.anime); const meta = document.createElement("span"); meta.textContent = `${t("episode",{n:entry.episode_number})} · ${t("minutes",{n:Math.round((entry.current_time||0)/60)})}`; copy.append(title,meta); item.append(img,copy); return item; })); document.querySelector("#recent-empty").hidden = data.recent.length > 0;
+        if (data.is_owner) { const form = document.querySelector("#edit-form"); form.display_name.value=user.display_name; form.bio.value=user.bio||""; form.avatar_url.value=user.avatar_url||""; form.banner_url.value=user.banner_url||""; form.is_profile_private.checked=user.is_profile_private; }
+      }
+      async function loadProfile() {
+        const endpoint = requestedUsername ? `/api/profiles/${encodeURIComponent(requestedUsername)}` : "/api/profiles/me";
+        try { const data = await api(endpoint); document.querySelector("#auth-view").hidden = true; document.querySelector("#profile-view").hidden = false; renderProfile(data); }
+        catch (error) { if (error.status === 401 && !requestedUsername) { document.querySelector("#profile-view").hidden = true; document.querySelector("#auth-view").hidden = false; } else { document.querySelector("#profile-view").hidden = true; document.querySelector("#auth-view").hidden = false; document.querySelector(".auth-art h1").textContent = error.message; } }
+      }
+      document.querySelector("#language").addEventListener("change", (event) => { language=event.target.value; localStorage.setItem("anime-library-language",language); applyLanguage(); });
+      document.querySelectorAll("[data-auth-tab]").forEach((button) => button.addEventListener("click", () => { document.querySelectorAll("[data-auth-tab]").forEach((item) => item.classList.toggle("active", item===button)); document.querySelector("#login-form").hidden=button.dataset.authTab!=="login"; document.querySelector("#register-form").hidden=button.dataset.authTab!=="register"; }));
+      document.querySelector("#login-form").addEventListener("submit", async (event) => { event.preventDefault(); const form=event.currentTarget; form.querySelector(".form-error").textContent=""; try { await api("/api/auth/login",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(form)))}); await loadProfile(); } catch(e){form.querySelector(".form-error").textContent=e.message;} });
+      document.querySelector("#register-form").addEventListener("submit", async (event) => { event.preventDefault(); const form=event.currentTarget; form.querySelector(".form-error").textContent=""; try { await api("/api/auth/register",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(form)))}); await loadProfile(); } catch(e){form.querySelector(".form-error").textContent=e.message;} });
+      document.querySelector("#library-filter").addEventListener("change", () => profile && renderProfile(profile));
+      document.querySelector("#edit-profile").addEventListener("click", () => document.querySelector("#edit-modal").hidden=false); document.querySelectorAll("[data-modal-close]").forEach((button)=>button.addEventListener("click",()=>document.querySelector("#edit-modal").hidden=true));
+      document.querySelector("#edit-form").addEventListener("submit", async (event) => { event.preventDefault(); const form=event.currentTarget; const values=Object.fromEntries(new FormData(form)); values.is_profile_private=form.is_profile_private.checked; form.querySelector(".form-error").textContent=""; try { await api("/api/profiles/me",{method:"PATCH",body:JSON.stringify(values)}); document.querySelector("#edit-modal").hidden=true; showToast(t("saved")); await loadProfile(); } catch(e){form.querySelector(".form-error").textContent=e.message;} });
+      document.querySelector("#logout").addEventListener("click", async () => { await api("/api/auth/logout",{method:"POST"}); location.href="/profile"; });
+      document.querySelector("#copy-profile").addEventListener("click", async () => { const url=`${location.origin}/u/${profile.user.username}`; await navigator.clipboard.writeText(url); showToast(t("profileCopied")); });
+      applyLanguage(); loadProfile();
+    </script>
+  </body>
+</html>
