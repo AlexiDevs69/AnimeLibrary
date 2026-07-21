@@ -1118,6 +1118,15 @@
         return data;
       }
 
+      async function fetchAccount() {
+        try {
+          const response = await fetch("/api/auth/me", { headers: { "Accept": "application/json" } });
+          return response.ok ? await response.json() : null;
+        } catch {
+          return null;
+        }
+      }
+
       function displayTitle(anime) {
         return anime?.title_english || anime?.title_romaji || anime?.title_native || t("sharedWatch");
       }
@@ -1433,7 +1442,8 @@
         const fileStatus = document.querySelector("#file-status");
         const fileStatusText = fileStatus.querySelector("span");
         const connectionStatus = document.querySelector("#connection-status");
-        const name = await requestIdentity(code);
+        const signedInAccount = await fetchAccount();
+        const name = signedInAccount?.display_name || await requestIdentity(code);
         localStorage.setItem("watch-name", name);
         localStorage.setItem(`room:${code}:name`, name);
 
@@ -1536,6 +1546,27 @@
           if (isYouTubeSource() && youtubeReady) return Number(youtubePlayer.getCurrentTime() || 0);
           if (isKodikSource() && kodikReady) return Number(kodikCurrentTime || 0);
           return Number(player.currentTime || 0);
+        }
+
+        async function saveWatchProgress(keepalive = false) {
+          if (!signedInAccount || !roomData?.anime?.id) return;
+          const currentTime = Math.max(0, currentPlaybackTime());
+          const expectedSeconds = expectedEpisodeSeconds();
+          try {
+            await fetch("/api/progress", {
+              method: "POST",
+              keepalive,
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                anime_id: roomData.anime.id,
+                episode_number: roomData.episode_number,
+                current_time: currentTime,
+                completed: expectedSeconds > 0 && currentTime >= expectedSeconds * .9,
+              }),
+            });
+          } catch {
+            // Progress is optional and must never interrupt synchronized playback.
+          }
         }
 
         function currentPlaybackRate() {
@@ -1843,8 +1874,11 @@
 
         connectSocket();
         const heartbeat = window.setInterval(() => send("ping", { client_time: new Date().toISOString() }), 25000);
+        const progressTimer = window.setInterval(() => saveWatchProgress(), 30000);
         window.addEventListener("beforeunload", () => {
+          saveWatchProgress(true);
           window.clearInterval(heartbeat);
+          window.clearInterval(progressTimer);
           window.clearInterval(youtubePoll);
           window.clearTimeout(reconnectTimer);
           socket?.close();
@@ -1900,7 +1934,7 @@
           if (!rejectedShortSource && ["licensed_hls", "anilibria_hls", "licensed_mp4"].includes(roomData?.source_type)) setPlayerStatus(t("videoLoadFailed"), "error");
         });
         player.addEventListener("play", () => { if (!applyingRemote) send("play"); });
-        player.addEventListener("pause", () => { if (!applyingRemote) send("pause"); });
+        player.addEventListener("pause", () => { if (!applyingRemote) send("pause"); saveWatchProgress(); });
         player.addEventListener("seeked", () => { if (!applyingRemote) send("seek"); });
         player.addEventListener("ratechange", () => { if (!applyingRemote) send("rate"); });
 
