@@ -9,7 +9,7 @@ from fastapi.templating import Jinja2Templates
 from app.config import BASE_DIR, settings
 from app.database import Base, engine
 from app.realtime import room_state_cache
-from app.routers import anime, rooms, ws
+from app.routers import admin, anime, profiles, rooms, ws
 
 
 @asynccontextmanager
@@ -40,6 +40,8 @@ templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
 app.include_router(anime.router)
 app.include_router(rooms.router)
+app.include_router(admin.router)
+app.include_router(profiles.router)
 app.include_router(ws.router)
 
 
@@ -58,6 +60,24 @@ async def room_page(request: Request, invite_code: str) -> HTMLResponse:
         request=request,
         name="room.html",
         context={"app_name": settings.app_name, "invite_code": invite_code.upper()},
+    )
+
+
+@app.get("/profile", response_class=HTMLResponse, include_in_schema=False)
+async def own_profile_page(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request=request,
+        name="profile.html",
+        context={"app_name": settings.app_name, "profile_username": ""},
+    )
+
+
+@app.get("/u/{username}", response_class=HTMLResponse, include_in_schema=False)
+async def public_profile_page(request: Request, username: str) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request=request,
+        name="profile.html",
+        context={"app_name": settings.app_name, "profile_username": username},
     )
 
 
