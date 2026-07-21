@@ -54,6 +54,7 @@ async def index(request: Request) -> HTMLResponse:
 
 
 @app.get("/room/{invite_code}", response_class=HTMLResponse, include_in_schema=False)
+@app.get("/watch/{invite_code}", response_class=HTMLResponse, include_in_schema=False)
 async def room_page(request: Request, invite_code: str) -> HTMLResponse:
     return templates.TemplateResponse(
         request=request,
