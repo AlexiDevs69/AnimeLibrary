@@ -8,7 +8,9 @@ from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect, status
 from sqlalchemy import select
 
 from app.database import AsyncSessionLocal
-from app.models import ChatMessage, RoomMember, User, WatchRoom
+from app.auth import token_digest
+from app.config import settings
+from app.models import AuthSession, ChatMessage, RoomMember, User, WatchRoom
 from app.realtime import connections, room_state_cache
 
 
@@ -37,9 +39,13 @@ async def resolve_member(
     room: WatchRoom,
     display_name: str,
     user_id: uuid.UUID | None,
+    account: User | None,
 ) -> User:
     async with AsyncSessionLocal() as db:
-        user = await db.get(User, user_id) if user_id else None
+        user = account
+        if user is None and user_id:
+            candidate = await db.get(User, user_id)
+            user = candidate if candidate is not None and candidate.is_guest else None
         if user is None:
             user = User(display_name=display_name, is_guest=True)
             db.add(user)
@@ -58,6 +64,22 @@ async def resolve_member(
         membership.is_connected = True
         await db.commit()
         return user
+
+
+async def websocket_account(websocket: WebSocket) -> User | None:
+    token = websocket.cookies.get(settings.session_cookie_name)
+    if not token:
+        return None
+    async with AsyncSessionLocal() as db:
+        return await db.scalar(
+            select(User)
+            .join(AuthSession, AuthSession.user_id == User.id)
+            .where(
+                AuthSession.token_hash == token_digest(token),
+                AuthSession.expires_at > datetime.now(timezone.utc),
+                User.is_guest.is_(False),
+            )
+        )
 
 
 async def mark_disconnected(room_id: uuid.UUID, user_id: uuid.UUID) -> None:
@@ -93,8 +115,10 @@ async def room_socket(
         return
 
     clean_name = " ".join(name.split())
-    member = await resolve_member(room, clean_name, user_id)
+    account = await websocket_account(websocket)
+    member = await resolve_member(room, clean_name, user_id, account)
     await connections.connect(room_code, websocket)
+    online_count = connections.count(room_code)
 
     cached_state = await room_state_cache.get(room_code)
     await websocket.send_json(
@@ -102,6 +126,7 @@ async def room_socket(
             "type": "connected",
             "user_id": str(member.id),
             "display_name": member.display_name,
+            "online_count": online_count,
             "state": cached_state or state_payload(room),
         }
     )
@@ -111,6 +136,7 @@ async def room_socket(
             "type": "member_joined",
             "user_id": str(member.id),
             "display_name": member.display_name,
+            "online_count": online_count,
             "server_time": now_iso(),
         },
     )
@@ -233,12 +259,14 @@ async def room_socket(
     finally:
         connections.disconnect(room_code, websocket)
         await mark_disconnected(room.id, member.id)
+        online_count = connections.count(room_code)
         await connections.broadcast(
             room_code,
             {
                 "type": "member_left",
                 "user_id": str(member.id),
                 "display_name": member.display_name,
+                "online_count": online_count,
                 "server_time": now_iso(),
             },
         )
