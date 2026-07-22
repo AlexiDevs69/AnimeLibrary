@@ -142,10 +142,13 @@
       .header-join-button { padding: 0 15px; background: var(--yellow); color: #211605; border-color: var(--yellow); }
       .header-join-button:hover { background: #e4e0c9; border-color: #e4e0c9; transform: translateY(-1px); }
       .header-join-button svg { width: 17px; height: 17px; }
-      .header-account-button { height: 39px; padding: 0 12px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 5px; background: rgba(121, 169, 198, .07); color: #c6d9df; text-decoration: none; font-size: 12px; font-weight: 750; }
+      .header-account-button { height: 41px; padding: 0 12px 0 6px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 10px 10px 10px 4px; background: rgba(121, 169, 198, .055); color: #c6d9df; text-decoration: none; font-size: 12px; font-weight: 750; }
       .header-account-button { position: relative; }
       .header-notice { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; display: grid; place-items: center; border: 2px solid #080d12; border-radius: 99px; background: #9bc8dc; color: #081116; font-size: 9px; font-weight: 900; }
-      .header-account-button svg { width: 17px; height: 17px; }
+      .account-avatar { width: 29px; height: 29px; flex: none; overflow: hidden; display: grid; place-items: center; border: 1px solid rgba(201,220,228,.18); border-radius: 8px 8px 8px 3px; background: #14232c; color: #a9cbd8; font-size: 9px; font-weight: 850; }
+      .account-avatar img { width: 100%; height: 100%; object-fit: cover; }
+      .account-avatar svg { width: 16px; height: 16px; }
+      .header-account-button > svg { width: 17px; height: 17px; }
       .language-menu {
         position: absolute;
         top: calc(100% + 9px);
@@ -783,7 +786,8 @@
         .brand-mark { width: 33px; height: 33px; }
         .language-button { min-width: 62px; }
         .header-account-button { width: 39px; padding: 0; justify-content: center; }
-        .header-account-button span { display: none; }
+        .header-account-button > span:not(.account-avatar) { display: none; }
+        .header-account-button .account-avatar { display: grid; }
         .header-join-button { width: 39px; padding: 0; }
         .header-join-button span { display: none; }
         .home-main { width: 100%; }
@@ -868,7 +872,7 @@
           </div>
 
           <a class="header-account-button" id="account-button" href="/profile">
-            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.7"/><path d="M5 20c.6-4 3-6 7-6s6.4 2 7 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <span class="account-avatar" id="header-account-avatar"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.7"/><path d="M5 20c.6-4 3-6 7-6s6.4 2 7 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
             <span data-account-label data-i18n="profile">Профіль</span>
           </a>
 
@@ -1339,6 +1343,8 @@
         try {
           currentAccount = await api("/api/auth/me");
           document.querySelector("[data-account-label]").textContent = currentAccount.display_name;
+          const headerAvatar=document.querySelector("#header-account-avatar"); headerAvatar.replaceChildren();
+          if(currentAccount.avatar_url){const image=document.createElement("img");image.src=currentAccount.avatar_url;image.alt="";headerAvatar.append(image);}else headerAvatar.textContent=currentAccount.display_name.slice(0,2).toUpperCase();
           const profileData = await api("/api/profiles/me");
           profileData.entries.forEach((entry) => { libraryAnimeIds.add(entry.anime.id); if(entry.episode_number)progressByAnime.set(entry.anime.id,entry.episode_number); });
           try {
