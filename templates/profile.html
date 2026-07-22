@@ -40,19 +40,29 @@
       @keyframes softPulse { 0%,100% { box-shadow: 0 18px 42px rgba(0,0,0,.36), 0 0 0 0 rgba(155,200,220,0); } 50% { box-shadow: 0 18px 42px rgba(0,0,0,.36), 0 0 0 5px rgba(155,200,220,.05); } }
       @keyframes shimmer { from { transform: translateX(-140%) skewX(-18deg); } to { transform: translateX(340%) skewX(-18deg); } }
 
-      .topbar { height: 70px; position: sticky; top: 0; z-index: 40; display: flex; align-items: center; justify-content: space-between; padding: 0 clamp(18px, 4vw, 56px); background: rgba(7, 10, 13, .9); border-bottom: 1px solid var(--line); backdrop-filter: blur(18px); }
+      .topbar { height: 70px; position: sticky; top: 0; z-index: 40; background: rgba(7, 10, 13, .9); border-bottom: 1px solid var(--line); backdrop-filter: blur(18px); }
+      .topbar::after { content: ""; position: absolute; right: 0; bottom: -1px; left: 0; height: 1px; opacity: .45; background: linear-gradient(90deg, transparent 8%, rgba(155,200,220,.28), rgba(145,181,140,.2), transparent 92%); }
+      .topbar-inner { width: min(1480px, calc(100% - 40px)); height: 100%; margin: 0 auto; display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: center; gap: 20px; }
       .back-link, .top-action { min-height: 40px; display: inline-flex; align-items: center; gap: 10px; border-radius: 10px; }
       .back-link { font-weight: 750; letter-spacing: -.02em; }
       .back-link svg, .top-action svg { width: 18px; height: 18px; }
       .brand-dot { width: 27px; height: 27px; display: grid; place-items: center; border: 1px solid rgba(155, 200, 220, .3); background: #101a20; border-radius: 8px 8px 8px 3px; color: var(--blue); }
       .brand-dot svg { width: 14px; }
-      .top-actions { display: flex; align-items: center; gap: 10px; }
+      .top-actions { grid-column: 3; justify-self: end; display: flex; align-items: center; gap: 10px; }
       .lang-select, .top-action { border: 1px solid var(--line); background: rgba(255,255,255,.025); color: var(--muted); }
       .lang-select { height: 40px; padding: 0 12px; border-radius: 9px; }
       .top-action { padding: 0 14px; cursor: pointer; }
       .top-action:hover { color: var(--text); border-color: var(--line-strong); }
       .top-action { position: relative; }
       .notice-badge { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; display: grid; place-items: center; border: 2px solid #080b0e; border-radius: 99px; background: #9bc8dc; color: #081015; font-size: 9px; font-weight: 900; }
+      .top-profile-chip { min-width: 0; max-width: 320px; height: 48px; justify-self: center; display: grid; grid-template-columns: 34px minmax(0,1fr); align-items: center; gap: 10px; padding: 5px 13px 5px 6px; border: 1px solid rgba(180,205,218,.1); border-radius: 12px 12px 12px 5px; background: linear-gradient(110deg, rgba(155,200,220,.055), rgba(145,181,140,.025)); transition: border-color .2s ease, background .2s ease, transform .2s ease; }
+      .top-profile-chip:hover { transform: translateY(-1px); border-color: rgba(155,200,220,.25); background: linear-gradient(110deg, rgba(155,200,220,.09), rgba(145,181,140,.04)); }
+      .top-profile-avatar { width: 34px; height: 34px; overflow: hidden; display: grid; place-items: center; border: 1px solid rgba(222,236,238,.46); border-radius: 9px 9px 9px 3px; background: #142128; color: var(--blue); font-size: 10px; font-weight: 850; }
+      .top-profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+      .top-profile-copy { min-width: 0; display: grid; gap: 2px; }
+      .top-profile-copy strong, .top-profile-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .top-profile-copy strong { color: #e7eeee; font-size: 11px; }
+      .top-profile-copy small { color: var(--muted); font-size: 9px; }
 
       .profile-hero { --hero-x: 50%; --hero-y: 50%; position: relative; min-height: 285px; overflow: hidden; border-bottom: 1px solid var(--line); background: linear-gradient(120deg, #1c343d, #304b45 55%, #6f8060); background-size: cover; background-position: var(--hero-x) var(--hero-y); transition: background-position .5s cubic-bezier(.2,.7,.2,1); animation: pageIn .45s ease both; }
       .profile-hero::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5,9,12,.84) 0%, rgba(5,9,12,.36) 56%, rgba(5,9,12,.54) 100%), linear-gradient(0deg, #090d10 0%, transparent 55%); }
@@ -232,6 +242,9 @@
       }
       @media (max-width: 760px) {
         .topbar { height: 60px; }
+        .topbar-inner { width: min(100% - 28px, 1480px); grid-template-columns: minmax(0,1fr) auto; gap: 10px; }
+        .top-profile-chip { display: none; }
+        .top-actions { grid-column: 2; }
         .top-action span { display: none; }
         .profile-hero, .hero-inner { min-height: 330px; }
         .hero-inner { padding-top: 56px; align-items: flex-end; }
@@ -266,22 +279,28 @@
   </head>
   <body>
     <header class="topbar">
-      <a class="back-link" href="/">
-        <span class="brand-dot"><svg viewBox="0 0 24 24" fill="none"><path d="m15 18-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-        <span>AnimeLibrary</span>
-      </a>
-      <div class="top-actions">
-        <button class="top-action" id="friends-open" type="button" hidden>
-          <svg viewBox="0 0 24 24" fill="none"><path d="M8.5 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7.5-1a3 3 0 1 0 0-6M2 20a6.5 6.5 0 0 1 13 0m1-6a5 5 0 0 1 6 4.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-          <span data-i18n="friends">Друзі</span><b class="notice-badge" id="friends-badge" hidden>0</b>
-        </button>
-        <select class="lang-select" id="language" aria-label="Language">
-          <option value="uk">UA</option><option value="en">EN</option><option value="ru">RU</option>
-        </select>
-        <button class="top-action" id="copy-profile" type="button" hidden>
-          <svg viewBox="0 0 24 24" fill="none"><path d="M8 12.5 12 16.5l4-4M12 4v12M5 19h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span data-i18n="share">Поділитися</span>
-        </button>
+      <div class="topbar-inner">
+        <a class="back-link" href="/">
+          <span class="brand-dot"><svg viewBox="0 0 24 24" fill="none"><path d="m15 18-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          <span>AnimeLibrary</span>
+        </a>
+        <a class="top-profile-chip" id="top-profile-chip" href="#profile-view" hidden>
+          <span class="top-profile-avatar" id="top-profile-avatar">AL</span>
+          <span class="top-profile-copy"><strong id="top-profile-name">Profile</strong><small id="top-profile-username">@—</small></span>
+        </a>
+        <div class="top-actions">
+          <button class="top-action" id="friends-open" type="button" hidden>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M8.5 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7.5-1a3 3 0 1 0 0-6M2 20a6.5 6.5 0 0 1 13 0m1-6a5 5 0 0 1 6 4.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+            <span data-i18n="friends">Друзі</span><b class="notice-badge" id="friends-badge" hidden>0</b>
+          </button>
+          <select class="lang-select" id="language" aria-label="Language">
+            <option value="uk">UA</option><option value="en">EN</option><option value="ru">RU</option>
+          </select>
+          <button class="top-action" id="copy-profile" type="button" hidden>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M8 12.5 12 16.5l4-4M12 4v12M5 19h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span data-i18n="share">Поділитися</span>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -520,6 +539,10 @@
         document.querySelector("#profile-hero").style.backgroundImage = heroArt ? `url("${heroArt.replaceAll('"','')}")` : "";
         const avatar = document.querySelector("#avatar"); avatar.replaceChildren(); const avatarUrl = user.avatar_url || pinned[0]?.anime.poster_url;
         if (avatarUrl) { const img = document.createElement("img"); img.src = avatarUrl; img.alt = user.display_name; avatar.append(img); } else { const span = document.createElement("span"); span.textContent = user.display_name.slice(0,2).toUpperCase(); avatar.append(span); }
+        const topChip=document.querySelector("#top-profile-chip"); topChip.hidden=false; topChip.href=`/u/${encodeURIComponent(user.username)}`;
+        document.querySelector("#top-profile-name").textContent=user.display_name; document.querySelector("#top-profile-username").textContent=`@${user.username}`;
+        const topAvatar=document.querySelector("#top-profile-avatar"); topAvatar.replaceChildren();
+        if(avatarUrl){const image=document.createElement("img");image.src=avatarUrl;image.alt="";topAvatar.append(image);}else topAvatar.textContent=user.display_name.slice(0,2).toUpperCase();
         document.querySelector("#owner-actions").hidden = !data.is_owner; document.querySelector("#copy-profile").hidden = false;
         const isPrivate = user.is_profile_private && !data.is_owner; document.querySelector("#private-message").hidden = !isPrivate; document.querySelector("#pinned-section").hidden = isPrivate; document.querySelector("#library-filter").closest(".section").hidden = isPrivate;
         document.querySelector("#pinned-count").textContent = pinned.length; const pinnedGrid = document.querySelector("#pinned-grid"); pinnedGrid.replaceChildren(...pinned.map((entry,index) => { const card=animeCard(entry); card.style.setProperty("--delay",`${80+index*55}ms`); return card; }));
