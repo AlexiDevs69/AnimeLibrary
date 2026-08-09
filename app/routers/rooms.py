@@ -9,11 +9,11 @@ from app import crud
 from app.auth import current_user, optional_user
 from app.database import get_db
 from app.models import (
+    Anime,
     Friendship,
     RoomInvitation,
     RoomMember,
     User,
-    VideoSource,
     WatchRoom,
 )
 from app.realtime import connections, room_state_cache
@@ -53,25 +53,17 @@ async def room_detail(
     if room is None:
         raise HTTPException(status_code=404, detail="Кімнату не знайдено")
 
-    # Older catalog rooms could be created with source_type=local_file even
-    # though no file was ever selected. In that case the UI only shows the
-    # upload/drop zone and the managed player never gets a source.
-    #
-    # Repair only this exact broken state. Real local-file rooms already have
-    # a file_hash or source_reference and are left untouched.
-    needs_managed_source = (
+    # Repair old rooms that were left as local_file before AniLibria sources
+    # finished syncing. This restores the previous automatic-player behavior.
+    needs_source = (
         room.anime_id is not None
         and room.source_type == "local_file"
         and room.source_reference is None
         and room.file_hash is None
     )
-
-    if needs_managed_source:
+    if needs_source and room.anime is not None:
         try:
-            if room.anime is not None:
-                # Refresh AniLibriya sources when their cache is stale/missing.
-                await crud.sync_anilibria_sources(db, room.anime)
-
+            await crud.sync_anilibria_sources(db, room.anime)
             resolved = await crud.resolve_room_source(
                 db,
                 anime_id=room.anime_id,
@@ -79,7 +71,6 @@ async def room_detail(
                 source_id=None,
                 source_type="auto",
             )
-
             if resolved is not None:
                 room.source_type, room.source_reference, room.source_id = resolved
                 room.file_hash = None
@@ -89,12 +80,10 @@ async def room_detail(
                 room.state_version += 1
                 room.updated_at = datetime.now(timezone.utc)
                 await db.commit()
-
                 room = await crud.get_room(db, invite_code)
                 if room is None:
                     raise HTTPException(status_code=404, detail="Кімнату не знайдено")
         except Exception:
-            # Provider outages must not make an existing room inaccessible.
             await db.rollback()
 
     return crud.room_to_schema(room)
@@ -127,27 +116,25 @@ async def change_room_episode(
         room.source_reference = None
         room.file_hash = None
     else:
-        preferred_id = room.source_id if room.source_type == "kodik_embed" else None
-        preferred_label = None
-        if room.source_id is not None and room.source_type != "kodik_embed":
-            current_source = await db.get(VideoSource, room.source_id)
-            preferred_label = current_source.label if current_source is not None else None
+        # AniLibria is the only automatic anime provider.
+        anime = await db.get(Anime, room.anime_id)
+        if anime is not None:
+            try:
+                await crud.sync_anilibria_sources(db, anime)
+            except Exception:
+                await db.rollback()
+                room = await db.scalar(
+                    select(WatchRoom).where(WatchRoom.invite_code == invite_code.upper()).with_for_update()
+                )
+                if room is None:
+                    raise HTTPException(status_code=404, detail="Перегляд не знайдено")
         resolved = await crud.resolve_room_source(
             db,
             anime_id=room.anime_id,
             episode_number=payload.episode_number,
-            source_id=preferred_id,
-            source_type=room.source_type,
-            source_label=preferred_label,
+            source_id=None,
+            source_type="auto",
         )
-        if resolved is None:
-            resolved = await crud.resolve_room_source(
-                db,
-                anime_id=room.anime_id,
-                episode_number=payload.episode_number,
-                source_id=None,
-                source_type="auto",
-            )
         if resolved is None:
             raise HTTPException(
                 status_code=409,
