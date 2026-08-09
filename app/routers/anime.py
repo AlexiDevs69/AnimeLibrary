@@ -11,7 +11,6 @@ from app.database import get_db
 from app.kodik import KodikError
 from app.schemas import AnimeDetailOut, AnimeOut, EpisodeOut, VideoSourceOut
 
-
 router = APIRouter(prefix="/api/anime", tags=["anime"])
 logger = logging.getLogger(__name__)
 
@@ -72,7 +71,14 @@ async def anime_detail(
                         source_type=source.source_type,
                         region=source.region,
                         language=source.language,
-                        label="AniLibria" if source.source_type == "anilibria_hls" else None,
+                        label=source.label
+                        or (
+                            "AniLiberty"
+                            if source.source_type == "anilibria_hls"
+                            else "YouTube Official"
+                            if source.source_type == "official_youtube"
+                            else None
+                        ),
                     )
                     for source in episode.sources
                     if source.is_active and source.source_type in crud.MANAGED_SOURCE_TYPES
