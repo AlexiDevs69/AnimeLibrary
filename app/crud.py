@@ -16,9 +16,16 @@ from sqlalchemy.orm import selectinload
 from app.anilibria import fetch_release_episodes
 from app.config import settings
 from app.kodik import build_player_url, candidates_from_results, search_by_mal_id
-from app.models import Anime, Episode, KodikRelease, RoomMember, User, VideoSource, WatchRoom
+from app.models import (
+    Anime,
+    Episode,
+    KodikRelease,
+    RoomMember,
+    User,
+    VideoSource,
+    WatchRoom,
+)
 from app.schemas import AnimeOut, RoomCreate, RoomOut
-
 
 INVITE_ALPHABET = string.ascii_uppercase + string.digits
 STORED_VIDEO_SOURCE_TYPES = (
@@ -218,6 +225,7 @@ async def cache_anime_batch(
                         episode_id=episode.id,
                         source_type="official_youtube",
                         source_reference=video_id,
+                        label="YouTube Official",
                         language=None,
                         region=None,
                         is_active=True,
@@ -306,6 +314,7 @@ async def sync_anilibria_sources(db: AsyncSession, anime: Anime) -> bool:
         if matches:
             source = matches[0]
             source.source_reference = provider_episode.stream_url
+            source.label = "AniLiberty"
             source.language = "ru"
             source.region = None
             source.is_active = True
@@ -317,6 +326,7 @@ async def sync_anilibria_sources(db: AsyncSession, anime: Anime) -> bool:
                     episode_id=episode.id,
                     source_type="anilibria_hls",
                     source_reference=provider_episode.stream_url,
+                    label="AniLiberty",
                     language="ru",
                     region=None,
                     is_active=True,
@@ -403,6 +413,7 @@ async def resolve_video_source(
     episode_number: int,
     source_id: uuid.UUID | None,
     source_type: str,
+    source_label: str | None = None,
 ) -> VideoSource | None:
     query = (
         select(VideoSource)
@@ -418,6 +429,8 @@ async def resolve_video_source(
         query = query.where(VideoSource.id == source_id)
     elif source_type in STORED_VIDEO_SOURCE_TYPES:
         query = query.where(VideoSource.source_type == source_type)
+        if source_label:
+            query = query.where(VideoSource.label == source_label)
     query = query.order_by(
         case(
             (VideoSource.source_type == "licensed_hls", 0),
@@ -456,7 +469,8 @@ async def resolve_room_source(
     episode_number: int,
     source_id: uuid.UUID | None,
     source_type: str,
-) -> tuple[str, str] | None:
+    source_label: str | None = None,
+) -> tuple[str, str, uuid.UUID] | None:
     stored_source = None
     if source_type != "kodik_embed":
         stored_source = await resolve_video_source(
@@ -465,9 +479,10 @@ async def resolve_room_source(
             episode_number=episode_number,
             source_id=source_id,
             source_type=source_type,
+            source_label=source_label,
         )
     if stored_source is not None:
-        return stored_source.source_type, stored_source.source_reference
+        return stored_source.source_type, stored_source.source_reference, stored_source.id
 
     if source_type in {"auto", "kodik_embed"}:
         release = await resolve_kodik_release(
@@ -487,7 +502,7 @@ async def resolve_room_source(
                 )
             except ValueError:
                 return None
-            return "kodik_embed", player_url
+            return "kodik_embed", player_url, release.id
     return None
 
 
@@ -510,7 +525,7 @@ async def create_room(
         if anime is None:
             raise LookupError("Аніме не знайдено")
 
-    resolved_source: tuple[str, str] | None = None
+    resolved_source: tuple[str, str, uuid.UUID] | None = None
     if data.source_type != "local_file":
         if data.anime_id is None:
             raise SourceUnavailableError("Спочатку виберіть аніме та серію")
@@ -537,6 +552,7 @@ async def create_room(
         anime_id=data.anime_id,
         episode_number=data.episode_number,
         source_type=resolved_source[0] if resolved_source else "local_file",
+        source_id=resolved_source[2] if resolved_source else None,
         source_reference=(
             resolved_source[1] if resolved_source else data.source_reference
         ),
@@ -569,6 +585,7 @@ def room_to_schema(room: WatchRoom) -> RoomOut:
         anime=AnimeOut.model_validate(room.anime) if room.anime else None,
         episode_number=room.episode_number,
         source_type=room.source_type,
+        source_id=room.source_id,
         source_reference=room.source_reference,
         file_hash=room.file_hash,
         current_time=room.current_time,
