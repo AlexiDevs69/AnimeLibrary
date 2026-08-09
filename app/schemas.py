@@ -8,22 +8,8 @@ from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-SourceType = Literal[
-    "auto",
-    "local_file",
-    "licensed_hls",
-    "licensed_mp4",
-    "official_youtube",
-    "anilibria_hls",
-    "kodik_embed",
-]
-ManagedSourceType = Literal[
-    "licensed_hls",
-    "licensed_mp4",
-    "official_youtube",
-    "anilibria_hls",
-    "kodik_embed",
-]
+SourceType = Literal["auto", "local_file", "anilibria_hls"]
+ManagedSourceType = Literal["anilibria_hls"]
 AdminSourceType = Literal["licensed_hls", "licensed_mp4"]
 
 
