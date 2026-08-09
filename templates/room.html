@@ -908,7 +908,7 @@
           </div>
 
           <div class="player-shell">
-            <video id="watch-player" controls playsinline preload="metadata"></video>
+            <video id="watch-player" controls playsinline preload="metadata" crossorigin="anonymous"></video>
             <div class="youtube-player" id="youtube-player" hidden></div>
             <iframe
               id="kodik-player"
@@ -1600,19 +1600,37 @@
             return;
           }
           hls?.destroy();
-          hls = new window.Hls({ enableWorker: true, lowLatencyMode: false });
-          hls.loadSource(sourceUrl);
-          hls.attachMedia(player);
+          hls = new window.Hls({
+            enableWorker: true,
+            lowLatencyMode: false,
+            // Chrome now exposes ManagedMediaSource. AniLiberty's cross-origin
+            // HLS streams are more reliable through the regular MediaSource path.
+            preferManagedMediaSource: false,
+            capLevelToPlayerSize: true,
+          });
           hls.on(window.Hls.Events.MANIFEST_PARSED, () => {
             setPlayerStatus(t("managedEpisodeReady"), "success");
           });
           hls.on(window.Hls.Events.ERROR, (_event, data) => {
+            console.error("[AnimeLibrary] HLS error", {
+              type: data.type,
+              details: data.details,
+              fatal: data.fatal,
+              response: data.response,
+              url: data.url,
+            });
             if (!data.fatal) return;
             setPlayerStatus(t("videoLoadFailed"), "error");
-            if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
-            else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
-            else hls.destroy();
+            if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
+              hls.startLoad();
+            } else if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) {
+              hls.recoverMediaError();
+            } else {
+              hls.destroy();
+            }
           });
+          hls.attachMedia(player);
+          hls.once(window.Hls.Events.MEDIA_ATTACHED, () => hls.loadSource(sourceUrl));
         }
 
         try {
