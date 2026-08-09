@@ -1,11 +1,21 @@
 from __future__ import annotations
 
-import uuid
 import secrets
-from datetime import datetime, timezone
+import uuid
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, Response, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
 from sqlalchemy import delete, func, or_, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -26,13 +36,20 @@ from app.models import (
     AnimeLibraryEntry,
     Friendship,
     ProfileImage,
+    ProfileWallPost,
     RoomInvitation,
     RoomMember,
     User,
-    WatchRoom,
+    WatchDailyStat,
+    WatchEpisodeStat,
     WatchProgress,
+    WatchRoom,
 )
-from app.profile_images import MAX_UPLOAD_BYTES, ProfileImageError, process_profile_image
+from app.profile_images import (
+    MAX_UPLOAD_BYTES,
+    ProfileImageError,
+    process_profile_image,
+)
 from app.schemas import (
     AccountOut,
     AnimeOut,
@@ -51,8 +68,20 @@ from app.schemas import (
     PublicAccountOut,
     RegisterIn,
     RoomInvitationOut,
+    WallAuthorOut,
+    WallPostCreate,
+    WallPostOut,
+    WatchHeartbeatIn,
+    WatchHeartbeatOut,
 )
-
+from app.watch_tracking import (
+    build_profile_achievements,
+    calculate_streak,
+    episode_is_completed,
+    level_from_watch_seconds,
+    rank_tiers_for_level,
+    watch_credit_seconds,
+)
 
 router = APIRouter(tags=["profiles"])
 FRIEND_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -77,6 +106,7 @@ def account_out(user: User) -> AccountOut:
         avatar_url=user.avatar_url,
         banner_url=user.banner_url,
         bio=user.bio,
+        profile_tags=user.profile_tags or [],
         is_profile_private=user.is_profile_private,
         created_at=user.created_at,
     )
@@ -169,6 +199,7 @@ async def update_profile(
     user.bio = payload.bio
     user.avatar_url = payload.avatar_url
     user.banner_url = payload.banner_url
+    user.profile_tags = list(payload.profile_tags)
     user.is_profile_private = payload.is_profile_private
     await db.commit()
     return account_out(user)
@@ -474,6 +505,26 @@ async def remove_friend(
     await db.commit()
 
 
+def wall_post_out(
+    post: ProfileWallPost,
+    viewer: User | None,
+) -> WallPostOut:
+    return WallPostOut(
+        id=post.id,
+        author=WallAuthorOut(
+            id=post.author.id,
+            username=post.author.username or "",
+            display_name=post.author.display_name,
+            avatar_url=post.author.avatar_url,
+        ),
+        parent_id=post.parent_id,
+        content=post.content,
+        created_at=post.created_at,
+        can_delete=viewer is not None
+        and viewer.id in {post.author_id, post.profile_user_id},
+    )
+
+
 async def build_profile(
     db: AsyncSession,
     profile_user: User,
@@ -487,9 +538,20 @@ async def build_profile(
         avatar_url=profile_user.avatar_url,
         banner_url=profile_user.banner_url,
         bio=profile_user.bio,
+        profile_tags=profile_user.profile_tags or [],
         is_profile_private=profile_user.is_profile_private,
         created_at=profile_user.created_at,
     )
+
+    episode_stats_result = await db.execute(
+        select(WatchEpisodeStat).where(WatchEpisodeStat.user_id == profile_user.id)
+    )
+    episode_stats = list(episode_stats_result.scalars())
+    total_watch_seconds = sum(item.watched_seconds for item in episode_stats)
+    level = level_from_watch_seconds(total_watch_seconds)
+    rank_tiers = rank_tiers_for_level(level.level)
+    today = datetime.now(timezone.utc).date()
+
     if profile_user.is_profile_private and not is_owner:
         return ProfileOut(
             user=public_user,
@@ -503,6 +565,13 @@ async def build_profile(
                 episodes_watched=0,
                 minutes_watched=0,
             ),
+            level=level,
+            rank_tiers=rank_tiers,
+            streak=calculate_streak([], today=today),
+            achievements=[],
+            wall=[],
+            wall_count=0,
+            can_post_wall=False,
         )
 
     entry_result = await db.execute(
@@ -516,17 +585,15 @@ async def build_profile(
         select(WatchProgress).where(WatchProgress.user_id == profile_user.id)
     )
     progress_by_anime = {item.anime_id: item for item in progress_result.scalars()}
+    watched_by_anime: dict[uuid.UUID, float] = {}
+    for item in episode_stats:
+        watched_by_anime[item.anime_id] = (
+            watched_by_anime.get(item.anime_id, 0) + item.watched_seconds
+        )
 
     entries: list[ProfileAnimeOut] = []
-    episodes_watched = 0
-    minutes_watched = 0
     for entry in library_entries:
         progress = progress_by_anime.get(entry.anime_id)
-        if progress is not None:
-            finished_before = max(0, progress.episode_number - 1)
-            episodes_watched += finished_before + int(progress.completed)
-            duration = entry.anime.episode_duration or 24
-            minutes_watched += finished_before * duration + int(progress.current_time // 60)
         entries.append(
             ProfileAnimeOut(
                 anime=AnimeOut.model_validate(entry.anime),
@@ -535,14 +602,57 @@ async def build_profile(
                 is_pinned=entry.is_pinned,
                 rating=entry.rating,
                 created_at=entry.created_at,
-                updated_at=max(entry.updated_at, progress.updated_at) if progress else entry.updated_at,
+                updated_at=max(entry.updated_at, progress.updated_at)
+                if progress
+                else entry.updated_at,
                 episode_number=progress.episode_number if progress else None,
                 current_time=progress.current_time if progress else None,
                 progress_completed=progress.completed if progress else False,
+                watched_seconds=round(watched_by_anime.get(entry.anime_id, 0)),
             )
         )
 
+    wall_result = await db.execute(
+        select(ProfileWallPost)
+        .options(selectinload(ProfileWallPost.author))
+        .where(ProfileWallPost.profile_user_id == profile_user.id)
+        .order_by(ProfileWallPost.created_at.desc())
+        .limit(40)
+    )
+    wall_posts = list(wall_result.scalars())
+    wall_count = await db.scalar(
+        select(func.count(ProfileWallPost.id)).where(
+            ProfileWallPost.profile_user_id == profile_user.id
+        )
+    )
+    authored_wall_posts = await db.scalar(
+        select(func.count(ProfileWallPost.id)).where(
+            ProfileWallPost.author_id == profile_user.id
+        )
+    )
+    daily_result = await db.execute(
+        select(WatchDailyStat).where(WatchDailyStat.user_id == profile_user.id)
+    )
+    daily_stats = list(daily_result.scalars())
+    streak = calculate_streak(
+        [(item.watch_date, item.watched_seconds) for item in daily_stats],
+        today=today,
+    )
+
     entries.sort(key=lambda item: item.updated_at, reverse=True)
+    completed_episodes = sum(item.completed for item in episode_stats)
+    completed_titles = sum(item.status == "completed" for item in entries)
+    favorite_count = sum(item.is_favorite for item in entries)
+    achievements = build_profile_achievements(
+        watch_seconds=round(total_watch_seconds),
+        completed_episodes=completed_episodes,
+        completed_titles=completed_titles,
+        library_count=len(entries),
+        favorite_count=favorite_count,
+        ratings_count=sum(item.rating is not None for item in entries),
+        authored_wall_posts=authored_wall_posts or 0,
+        current_streak=streak.current_days,
+    )
     return ProfileOut(
         user=public_user,
         is_owner=is_owner,
@@ -550,11 +660,18 @@ async def build_profile(
         recent=[item for item in entries if item.episode_number is not None][:8],
         stats=ProfileStatsOut(
             library_count=len(entries),
-            completed_count=sum(item.status == "completed" for item in entries),
-            favorite_count=sum(item.is_favorite for item in entries),
-            episodes_watched=episodes_watched,
-            minutes_watched=minutes_watched,
+            completed_count=completed_titles,
+            favorite_count=favorite_count,
+            episodes_watched=completed_episodes,
+            minutes_watched=round(total_watch_seconds / 60),
         ),
+        level=level,
+        rank_tiers=rank_tiers,
+        streak=streak,
+        achievements=achievements,
+        wall=[wall_post_out(post, viewer) for post in wall_posts],
+        wall_count=wall_count or 0,
+        can_post_wall=viewer is not None,
     )
 
 
@@ -582,6 +699,72 @@ async def public_profile(
     if profile_user is None:
         raise HTTPException(status_code=404, detail="Профіль не знайдено")
     return await build_profile(db, profile_user, viewer)
+
+
+@router.post(
+    "/api/profiles/{username}/wall",
+    response_model=WallPostOut,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_wall_post(
+    username: str,
+    payload: WallPostCreate,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+) -> WallPostOut:
+    profile_user = await db.scalar(
+        select(User).where(
+            func.lower(User.username) == username.strip().lower(),
+            User.is_guest.is_(False),
+        )
+    )
+    if profile_user is None:
+        raise HTTPException(status_code=404, detail="Профіль не знайдено")
+    if profile_user.is_profile_private and profile_user.id != user.id:
+        raise HTTPException(status_code=403, detail="Стіна приватного профілю закрита")
+
+    recent_post = await db.scalar(
+        select(ProfileWallPost.id).where(
+            ProfileWallPost.author_id == user.id,
+            ProfileWallPost.created_at > datetime.now(timezone.utc) - timedelta(seconds=5),
+        )
+    )
+    if recent_post is not None:
+        raise HTTPException(status_code=429, detail="Зачекайте кілька секунд")
+
+    if payload.parent_id is not None:
+        parent = await db.get(ProfileWallPost, payload.parent_id)
+        if (
+            parent is None
+            or parent.profile_user_id != profile_user.id
+            or parent.parent_id is not None
+        ):
+            raise HTTPException(status_code=404, detail="Коментар для відповіді не знайдено")
+
+    post = ProfileWallPost(
+        profile_user_id=profile_user.id,
+        author_id=user.id,
+        parent_id=payload.parent_id,
+        content=payload.content,
+        author=user,
+    )
+    db.add(post)
+    await db.commit()
+    await db.refresh(post)
+    return wall_post_out(post, user)
+
+
+@router.delete("/api/profile-wall/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_wall_post(
+    post_id: uuid.UUID,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    post = await db.get(ProfileWallPost, post_id)
+    if post is None or user.id not in {post.author_id, post.profile_user_id}:
+        raise HTTPException(status_code=404, detail="Коментар не знайдено")
+    await db.delete(post)
+    await db.commit()
 
 
 @router.put("/api/library/{anime_id}", response_model=ProfileAnimeOut)
@@ -667,7 +850,8 @@ async def save_progress(
         db.add(progress)
     progress.episode_number = payload.episode_number
     progress.current_time = payload.current_time
-    progress.completed = payload.completed
+    # This legacy endpoint only remembers where the viewer stopped. Completion,
+    # XP and watched time are intentionally owned by the heartbeat endpoint.
     progress.updated_at = datetime.now(timezone.utc)
 
     entry_result = await db.execute(
@@ -688,3 +872,143 @@ async def save_progress(
         entry.status = "watching"
     entry.updated_at = datetime.now(timezone.utc)
     await db.commit()
+
+
+@router.post("/api/watch/heartbeat", response_model=WatchHeartbeatOut)
+async def watch_heartbeat(
+    payload: WatchHeartbeatIn,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+) -> WatchHeartbeatOut:
+    anime = await db.get(Anime, payload.anime_id)
+    if anime is None:
+        raise HTTPException(status_code=404, detail="Аніме не знайдено")
+
+    progress = await db.scalar(
+        select(WatchProgress)
+        .where(
+            WatchProgress.user_id == user.id,
+            WatchProgress.anime_id == payload.anime_id,
+        )
+        .with_for_update()
+    )
+    if progress is None:
+        progress = WatchProgress(user_id=user.id, anime_id=payload.anime_id)
+        db.add(progress)
+        await db.flush()
+
+    now = datetime.now(timezone.utc)
+    same_session = (
+        progress.heartbeat_session_id == payload.session_id
+        and progress.episode_number == payload.episode_number
+    )
+    credited_seconds = watch_credit_seconds(
+        previous_at=progress.heartbeat_at,
+        previous_position=progress.heartbeat_position,
+        previous_playing=progress.heartbeat_playing,
+        same_session=same_session,
+        now=now,
+        position=payload.position,
+        playback_rate=payload.playback_rate,
+        visible=payload.visible,
+    )
+
+    episode_stat = await db.scalar(
+        select(WatchEpisodeStat)
+        .where(
+            WatchEpisodeStat.user_id == user.id,
+            WatchEpisodeStat.anime_id == payload.anime_id,
+            WatchEpisodeStat.episode_number == payload.episode_number,
+        )
+        .with_for_update()
+    )
+    if episode_stat is None:
+        episode_stat = WatchEpisodeStat(
+            user_id=user.id,
+            anime_id=payload.anime_id,
+            episode_number=payload.episode_number,
+            watched_seconds=0,
+            max_position=0,
+            completed=False,
+        )
+        db.add(episode_stat)
+
+    fallback_duration = (anime.episode_duration or 0) * 60 or None
+    duration = payload.duration or fallback_duration
+    episode_stat.watched_seconds += credited_seconds
+    episode_stat.max_position = max(episode_stat.max_position, payload.position)
+    episode_stat.duration_seconds = duration or episode_stat.duration_seconds
+    episode_stat.completed = episode_stat.completed or episode_is_completed(
+        watched_seconds=episode_stat.watched_seconds,
+        position=payload.position,
+        duration=episode_stat.duration_seconds,
+        ended=payload.ended,
+    )
+    episode_stat.updated_at = now
+
+    if credited_seconds:
+        await db.execute(
+            pg_insert(WatchDailyStat)
+            .values(
+                user_id=user.id,
+                watch_date=now.date(),
+                watched_seconds=credited_seconds,
+                updated_at=now,
+            )
+            .on_conflict_do_update(
+                constraint="uq_watch_daily_stat_user_date",
+                set_={
+                    "watched_seconds": WatchDailyStat.watched_seconds
+                    + credited_seconds,
+                    "updated_at": now,
+                },
+            )
+        )
+
+    progress.episode_number = payload.episode_number
+    progress.current_time = payload.position
+    progress.duration_seconds = duration
+    progress.completed = episode_stat.completed
+    progress.heartbeat_session_id = payload.session_id
+    progress.heartbeat_at = now
+    progress.heartbeat_position = payload.position
+    progress.heartbeat_playing = payload.playing and payload.visible and not payload.ended
+    progress.updated_at = now
+
+    entry = await db.scalar(
+        select(AnimeLibraryEntry).where(
+            AnimeLibraryEntry.user_id == user.id,
+            AnimeLibraryEntry.anime_id == payload.anime_id,
+        )
+    )
+    if entry is None:
+        entry = AnimeLibraryEntry(
+            user_id=user.id,
+            anime_id=payload.anime_id,
+            status="watching",
+        )
+        db.add(entry)
+    elif entry.status == "planned":
+        entry.status = "watching"
+    if (
+        episode_stat.completed
+        and anime.episodes_count
+        and payload.episode_number >= anime.episodes_count
+    ):
+        entry.status = "completed"
+    entry.updated_at = now
+
+    await db.flush()
+    total_watch_seconds = await db.scalar(
+        select(func.coalesce(func.sum(WatchEpisodeStat.watched_seconds), 0)).where(
+            WatchEpisodeStat.user_id == user.id
+        )
+    )
+    await db.commit()
+    total = round(float(total_watch_seconds or 0))
+    return WatchHeartbeatOut(
+        credited_seconds=credited_seconds,
+        total_watch_seconds=total,
+        episode_completed=episode_stat.completed,
+        level=level_from_watch_seconds(total),
+    )
