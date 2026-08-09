@@ -4,6 +4,7 @@ import uuid
 from datetime import date, datetime, timezone
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     Date,
     DateTime,
@@ -11,7 +12,6 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
-    JSON,
     LargeBinary,
     String,
     Text,
@@ -39,6 +39,9 @@ class User(Base):
     friend_code: Mapped[str | None] = mapped_column(String(12), unique=True, index=True)
     bio: Mapped[str | None] = mapped_column(String(300))
     banner_url: Mapped[str | None] = mapped_column(String(1000))
+    profile_tags: Mapped[list[str]] = mapped_column(
+        JSON, default=list, server_default="[]", nullable=False
+    )
     is_profile_private: Mapped[bool] = mapped_column(
         Boolean, default=False, server_default="false"
     )
@@ -154,6 +157,7 @@ class VideoSource(Base):
     )
     source_type: Mapped[str] = mapped_column(String(32), index=True)
     source_reference: Mapped[str] = mapped_column(String(2000))
+    label: Mapped[str | None] = mapped_column(String(80))
     region: Mapped[str | None] = mapped_column(String(10))
     language: Mapped[str | None] = mapped_column(String(20))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
@@ -207,6 +211,7 @@ class WatchRoom(Base):
     )
     episode_number: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
     source_type: Mapped[str] = mapped_column(String(32), default="local_file")
+    source_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
     source_reference: Mapped[str | None] = mapped_column(String(2000))
     file_hash: Mapped[str | None] = mapped_column(String(128), index=True)
     current_time: Mapped[float] = mapped_column(Float, default=0.0, server_default="0")
@@ -324,9 +329,98 @@ class WatchProgress(Base):
     episode_number: Mapped[int] = mapped_column(Integer, default=1)
     current_time: Mapped[float] = mapped_column(Float, default=0.0)
     completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    duration_seconds: Mapped[float | None] = mapped_column(Float)
+    heartbeat_session_id: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    heartbeat_position: Mapped[float] = mapped_column(
+        Float, default=0.0, server_default="0", nullable=False
+    )
+    heartbeat_playing: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false", nullable=False
+    )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
     )
+
+
+class WatchEpisodeStat(Base):
+    __tablename__ = "watch_episode_stats"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "anime_id",
+            "episode_number",
+            name="uq_watch_episode_stat_user_anime_episode",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    anime_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("anime.id", ondelete="CASCADE"), index=True
+    )
+    episode_number: Mapped[int] = mapped_column(Integer)
+    watched_seconds: Mapped[float] = mapped_column(
+        Float, default=0.0, server_default="0", nullable=False
+    )
+    max_position: Mapped[float] = mapped_column(
+        Float, default=0.0, server_default="0", nullable=False
+    )
+    duration_seconds: Mapped[float | None] = mapped_column(Float)
+    completed: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false", nullable=False
+    )
+    first_watched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+
+class WatchDailyStat(Base):
+    __tablename__ = "watch_daily_stats"
+    __table_args__ = (
+        UniqueConstraint("user_id", "watch_date", name="uq_watch_daily_stat_user_date"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    watch_date: Mapped[date] = mapped_column(Date, index=True)
+    watched_seconds: Mapped[float] = mapped_column(
+        Float, default=0.0, server_default="0", nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+
+class ProfileWallPost(Base):
+    __tablename__ = "profile_wall_posts"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    profile_user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    author_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), index=True
+    )
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("profile_wall_posts.id", ondelete="CASCADE"), index=True
+    )
+    content: Mapped[str] = mapped_column(String(600))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, nullable=False, index=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+    author: Mapped[User] = relationship(foreign_keys=[author_id])
 
 
 class AnimeLibraryEntry(Base):
