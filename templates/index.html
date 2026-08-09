@@ -492,6 +492,16 @@
       .source-availability { min-height: 16px; margin: -4px 1px 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
       .source-availability.ready { color: var(--green); }
       .source-availability.error { color: var(--red); }
+      .studio-options { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+      .studio-option { min-width: 0; min-height: 48px; padding: 8px 9px 8px 11px; display: grid; grid-template-columns: minmax(0,1fr) 24px; align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: 10px 10px 10px 4px; background: rgba(255,255,255,.02); color: #c6cbd0; cursor: pointer; text-align: left; transition: .18s ease; }
+      .studio-option:hover { transform: translateY(-1px); border-color: rgba(121,169,198,.3); background: rgba(121,169,198,.045); }
+      .studio-option.active { border-color: rgba(143,184,161,.48); background: linear-gradient(120deg, rgba(47,78,59,.36), rgba(24,39,46,.56)); box-shadow: inset 3px 0 #8fb8a1; color: #eef3ef; }
+      .studio-option-copy { min-width: 0; }
+      .studio-option-copy strong, .studio-option-copy span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .studio-option-copy strong { font-size: 10px; }
+      .studio-option-copy span { margin-top: 4px; color: var(--muted-2); font-size: 8px; }
+      .studio-star { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 7px; color: #59666d; font-size: 15px; }
+      .studio-star.favorite { color: #d4bd71; text-shadow: 0 0 10px rgba(212,189,113,.25); }
       .toggle-row { position: relative; display: flex; align-items: center; gap: 15px; padding: 13px; border: 1px solid var(--line); border-radius: 11px; background: rgba(255, 255, 255, .02); }
       .toggle-row > span:first-child { display: grid; gap: 3px; margin-right: auto; }
       .toggle-row strong { font-size: 11px; }
@@ -780,6 +790,7 @@
       }
 
       @media (max-width: 620px) {
+        .studio-options { grid-template-columns: 1fr; }
         .topbar { height: 64px; }
         .topbar-inner { gap: 12px; }
         .brand-word { display: none; }
@@ -1007,6 +1018,7 @@
             <span data-i18n="videoVersion">Версія відео</span>
             <select id="create-room-source" required></select>
           </label>
+          <div class="studio-options" id="studio-options" aria-label="Voice studios"></div>
           <p class="source-availability" id="source-availability" data-i18n="loadingEpisodes">Перевіряємо доступні повні серії…</p>
           <button class="modal-primary" type="submit">
             <span data-i18n="createAndContinue">Дивитися зараз</span>
@@ -1054,7 +1066,7 @@
           haveCode: "У мене є код", footerText: "Каталог на основі AniList. Відеофайли не зберігаються на сервері.",
           newRoom: "Почати перегляд", createRoomTitle: "Оберіть серію", yourName: "Ваше ім’я", namePlaceholder: "Як вас показувати в кімнаті", guestName: "Гість",
           episode: "Серія", episodeShort: "{count} сер.", ongoing: "Онґоїнг", sharedControls: "Спільне керування", sharedControlsText: "Учасники зможуть ставити паузу й перемотувати.",
-          videoVersion: "Версія відео", loadingEpisodes: "Перевіряємо доступні повні серії…", noFullEpisodes: "Для цього тайтлу ще немає доданих повних серій.", fullEpisodesReady: "Доступно повних серій: {count}",
+          videoVersion: "Озвучка / джерело", loadingEpisodes: "Перевіряємо доступні повні серії…", noFullEpisodes: "Для цього тайтлу ще немає доданих повних серій.", fullEpisodesReady: "Доступно повних серій: {count}", favoriteStudio: "Улюблена студія", favoriteStudiosLimit: "Можна закріпити до 5 улюблених студій",
           createAndContinue: "Дивитися зараз", createRoom: "Дивитися", creating: "Готуємо плеєр…", invitation: "Запрошення", joinRoomTitle: "Приєднатися до перегляду",
           joinRoomDescription: "Вставте восьмизначний код, який надіслав власник кімнати.", roomCode: "Код кімнати", enterRoom: "Увійти", serverError: "Помилка сервера",
           backToCatalog: "До каталогу", copyLink: "Копіювати посилання", watchParty: "Watch Party", connecting: "Підключення…", synchronized: "Синхронізовано", reconnecting: "Перепідключення…",
@@ -1079,7 +1091,7 @@
           haveCode: "I have a code", footerText: "Catalog powered by AniList. Video files are never stored on the server.",
           newRoom: "Start watching", createRoomTitle: "Choose an episode", yourName: "Your name", namePlaceholder: "How others will see you", guestName: "Guest",
           episode: "Episode", episodeShort: "{count} eps.", ongoing: "Ongoing", sharedControls: "Shared controls", sharedControlsText: "Members can pause and seek.",
-          videoVersion: "Video version", loadingEpisodes: "Checking available full episodes…", noFullEpisodes: "No full episodes have been added for this title yet.", fullEpisodesReady: "Full episodes available: {count}",
+          videoVersion: "Dub / source", loadingEpisodes: "Checking available full episodes…", noFullEpisodes: "No full episodes have been added for this title yet.", fullEpisodesReady: "Full episodes available: {count}", favoriteStudio: "Favorite studio", favoriteStudiosLimit: "You can pin up to 5 favorite studios",
           createAndContinue: "Watch now", createRoom: "Watch", creating: "Preparing player…", invitation: "Invitation", joinRoomTitle: "Join the watch",
           joinRoomDescription: "Enter the eight-character code sent by the room owner.", roomCode: "Room code", enterRoom: "Join", serverError: "Server error",
           backToCatalog: "Back to catalog", copyLink: "Copy link", watchParty: "Watch Party", connecting: "Connecting…", synchronized: "Synchronized", reconnecting: "Reconnecting…",
@@ -1104,7 +1116,7 @@
           haveCode: "У меня есть код", footerText: "Каталог на основе AniList. Видеофайлы не хранятся на сервере.",
           newRoom: "Начать просмотр", createRoomTitle: "Выберите серию", yourName: "Ваше имя", namePlaceholder: "Как вас показывать в комнате", guestName: "Гость",
           episode: "Серия", episodeShort: "{count} сер.", ongoing: "Онгоинг", sharedControls: "Общее управление", sharedControlsText: "Участники смогут ставить паузу и перематывать.",
-          videoVersion: "Версия видео", loadingEpisodes: "Проверяем доступные полные серии…", noFullEpisodes: "Для этого тайтла пока нет добавленных полных серий.", fullEpisodesReady: "Доступно полных серий: {count}",
+          videoVersion: "Озвучка / источник", loadingEpisodes: "Проверяем доступные полные серии…", noFullEpisodes: "Для этого тайтла пока нет добавленных полных серий.", fullEpisodesReady: "Доступно полных серий: {count}", favoriteStudio: "Любимая студия", favoriteStudiosLimit: "Можно закрепить до 5 любимых студий",
           createAndContinue: "Смотреть сейчас", createRoom: "Смотреть", creating: "Готовим плеер…", invitation: "Приглашение", joinRoomTitle: "Присоединиться к просмотру",
           joinRoomDescription: "Введите восьмизначный код, который прислал владелец комнаты.", roomCode: "Код комнаты", enterRoom: "Войти", serverError: "Ошибка сервера",
           backToCatalog: "К каталогу", copyLink: "Копировать ссылку", watchParty: "Watch Party", connecting: "Подключение…", synchronized: "Синхронизировано", reconnecting: "Переподключение…",
@@ -1338,6 +1350,14 @@
       let currentAccount = null;
       const libraryAnimeIds = new Set();
       const progressByAnime = new Map();
+      let favoriteStudios = [];
+      try {
+        favoriteStudios = JSON.parse(
+          localStorage.getItem("anime-library-favorite-studios") || "[]",
+        ).filter((item) => typeof item === "string").slice(0, 5);
+      } catch {
+        favoriteStudios = [];
+      }
 
       async function loadAccount() {
         try {
@@ -1407,7 +1427,7 @@
 
       function sourceOptionLabel(source) {
         const kind = source.source_type === "anilibria_hls"
-          ? "AniLibria · HLS"
+          ? "AniLiberty · HLS"
           : source.source_type === "licensed_hls"
           ? "HLS"
           : source.source_type === "official_youtube"
@@ -1420,11 +1440,68 @@
         const episodeSelect = document.querySelector("#create-room-episode");
         const sourceSelect = document.querySelector("#create-room-source");
         const episode = selectedAnimeDetail?.episodes.find((item) => String(item.number) === episodeSelect.value);
-        sourceSelect.replaceChildren(...(episode?.sources || []).map((source) => {
+        const previous = sourceSelect.value;
+        const sources = [...(episode?.sources || [])].sort((first, second) => {
+          const firstIndex = favoriteStudios.indexOf(first.label || first.source_type);
+          const secondIndex = favoriteStudios.indexOf(second.label || second.source_type);
+          return (firstIndex < 0 ? 99 : firstIndex) - (secondIndex < 0 ? 99 : secondIndex);
+        });
+        sourceSelect.replaceChildren(...sources.map((source) => {
           const option = document.createElement("option");
           option.value = source.id;
           option.textContent = sourceOptionLabel(source);
           return option;
+        }));
+        if (previous && sources.some((source) => source.id === previous)) {
+          sourceSelect.value = previous;
+        }
+        const picker = document.querySelector("#studio-options");
+        picker.replaceChildren(...sources.map((source) => {
+          const key = source.label || source.source_type;
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `studio-option${source.id === sourceSelect.value ? " active" : ""}`;
+
+          const copy = document.createElement("span");
+          copy.className = "studio-option-copy";
+          const title = document.createElement("strong");
+          title.textContent = source.label || sourceOptionLabel(source);
+          const meta = document.createElement("span");
+          meta.textContent = [
+            source.language?.toUpperCase(),
+            source.region?.toUpperCase(),
+            source.source_type === "kodik_embed" ? "Kodik" : source.source_type === "anilibria_hls" ? "HLS" : "Source",
+          ].filter(Boolean).join(" · ");
+          copy.append(title, meta);
+
+          const star = document.createElement("span");
+          star.className = `studio-star${favoriteStudios.includes(key) ? " favorite" : ""}`;
+          star.textContent = favoriteStudios.includes(key) ? "★" : "☆";
+          star.title = t("favoriteStudio");
+          star.addEventListener("click", (event) => {
+            event.stopPropagation();
+            if (favoriteStudios.includes(key)) {
+              favoriteStudios = favoriteStudios.filter((item) => item !== key);
+            } else if (favoriteStudios.length < 5) {
+              favoriteStudios.push(key);
+            } else {
+              showToast(t("favoriteStudiosLimit"), "error");
+              return;
+            }
+            localStorage.setItem(
+              "anime-library-favorite-studios",
+              JSON.stringify(favoriteStudios),
+            );
+            refreshSourceOptions();
+          });
+          button.addEventListener("click", () => {
+            sourceSelect.value = source.id;
+            picker.querySelectorAll(".studio-option").forEach((item) => {
+              item.classList.toggle("active", item === button);
+            });
+          });
+          button.append(copy, star);
+          return button;
         }));
       }
 
