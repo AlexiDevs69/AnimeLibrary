@@ -44,7 +44,7 @@ services:
       - key: KODIK_SYNC_TTL_SECONDS
         value: "21600"
       - key: KODIK_MAX_TRANSLATIONS
-        value: "8"
+        value: "12"
       - key: APP_NAME
         value: AnimeLibrary
       - key: SESSION_COOKIE_SECURE
