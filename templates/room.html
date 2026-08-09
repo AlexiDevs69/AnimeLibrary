@@ -598,6 +598,18 @@
       .invite-friend-item button { min-height: 34px; padding: 0 11px; border: 1px solid rgba(121,169,198,.34); border-radius: 8px; background: rgba(121,169,198,.1); color: #c5dce5; font-size: 10px; font-weight: 800; cursor: pointer; }
       .invite-friend-item button:disabled { opacity: .55; cursor: default; }
       .invite-empty { margin: 15px 0 0; padding: 18px; border: 1px dashed var(--line-strong); border-radius: 10px; color: var(--muted); text-align: center; font-size: 11px; line-height: 1.5; }
+      .episode-nav-row { display: flex; align-items: center; gap: 9px; }
+      .episode-nav-button { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 9px 9px 9px 3px; background: rgba(255,255,255,.025); color: #b8c6ca; cursor: pointer; transition: .18s ease; }
+      .episode-nav-button:hover:not(:disabled) { transform: translateY(-1px); border-color: rgba(143,184,161,.4); background: rgba(143,184,161,.09); color: #e4eeea; }
+      .episode-nav-button:disabled { opacity: .28; cursor: default; }
+      .episode-nav-button svg { width: 15px; height: 15px; }
+      .next-episode-card { min-height: 62px; padding: 10px 12px; display: grid; grid-template-columns: 42px minmax(0,1fr) auto; align-items: center; gap: 11px; border: 1px solid rgba(143,184,161,.2); border-radius: 11px 11px 11px 4px; background: linear-gradient(110deg, rgba(28,48,39,.42), rgba(11,17,20,.9)); }
+      .next-episode-card img { width: 42px; height: 42px; object-fit: cover; border-radius: 8px 8px 8px 3px; background: #10181c; }
+      .next-episode-copy { min-width: 0; }
+      .next-episode-copy span, .next-episode-copy strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .next-episode-copy span { color: var(--green); font-size: 8px; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+      .next-episode-copy strong { margin-top: 5px; font-size: 11px; }
+      .next-episode-card button { min-height: 34px; padding: 0 12px; border: 1px solid rgba(143,184,161,.35); border-radius: 8px; background: rgba(143,184,161,.1); color: #d9e9df; cursor: pointer; font-size: 9px; font-weight: 850; }
       .session-link { margin-top: 14px; padding: 10px 12px; display: flex; align-items: center; gap: 9px; border: 1px solid var(--line); border-radius: 9px; background: #0a1015; }
       .session-link code { min-width: 0; flex: 1; overflow: hidden; color: #abc8d4; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
       .session-link button { width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 8px; background: #131e25; color: var(--text); cursor: pointer; }
@@ -920,7 +932,11 @@
 
         <div class="watch-info-card">
           <div class="watch-title-block">
-            <span class="section-kicker" id="room-episode" data-i18n="episodeOne">Серія 1</span>
+            <div class="episode-nav-row">
+              <button class="episode-nav-button" id="previous-episode" type="button" data-i18n-title="previousEpisode" title="Попередня серія"><svg viewBox="0 0 24 24" fill="none"><path d="m14.5 6-6 6 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              <span class="section-kicker" id="room-episode" data-i18n="episodeOne">Серія 1</span>
+              <button class="episode-nav-button" id="next-episode" type="button" data-i18n-title="nextEpisode" title="Наступна серія"><svg viewBox="0 0 24 24" fill="none"><path d="m9.5 6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            </div>
             <h1 id="room-anime-title" data-i18n="loadingRoom">Завантаження кімнати…</h1>
           </div>
           <div class="sync-pill">
@@ -929,6 +945,12 @@
             </span>
             <span><strong data-i18n="syncActive">Синхронізація активна</strong><small data-i18n="syncActiveText">Пауза й перемотування для всіх</small></span>
           </div>
+        </div>
+
+        <div class="next-episode-card" id="next-episode-card" hidden>
+          <img id="next-episode-image" alt="">
+          <div class="next-episode-copy"><span data-i18n="upNext">Далі</span><strong id="next-episode-title">Серія 2</strong></div>
+          <button id="next-episode-cta" type="button" data-i18n="watchNext">Дивитися</button>
         </div>
 
         <div class="file-notice" id="file-status">
@@ -1026,7 +1048,7 @@
           autoplayBlocked: "Браузер заблокував автозапуск — натисніть Play один раз.", roomCommunication: "Спілкування", roomChat: "Чат кімнати", online: "Онлайн", connectingToRoom: "Підключаємося до кімнати…",
           messagePlaceholder: "Написати повідомлення…", send: "Надіслати", privateRoom: "Приватна кімната за посиланням", almostReady: "Майже готово", introduceYourself: "Як вас показувати в кімнаті?",
           introduceText: "Це ім’я бачитимуть інші учасники в чаті.", joinWatch: "Приєднатися до перегляду", connectedMessage: "Ви підключилися до кімнати.", memberJoined: "{name} приєднався(-лась).", memberLeft: "{name} вийшов(-ла).",
-          linkCopied: "Посилання скопійовано", copiedCode: "Код скопійовано", finished: "Завершено", airing: "Виходить", upcoming: "Анонсовано", hiatus: "Призупинено", cancelled: "Скасовано", unknown: "Статус невідомий", inviteFriend: "Запросити друга", watchTogether: "Дивитися разом", inviteFriendHelp: "Друг отримає запрошення у своєму профілі й одразу потрапить на ваш таймкод.", invite: "Запросити", invited: "Надіслано", noFriends: "Спочатку додайте друзів у профілі — або скопіюйте посилання вище.", signInToInvite: "Увійдіть у профіль, щоб надсилати друзям запрошення.", onlineFriend: "У мережі", offlineFriend: "Не в мережі",
+          linkCopied: "Посилання скопійовано", copiedCode: "Код скопійовано", finished: "Завершено", airing: "Виходить", upcoming: "Анонсовано", hiatus: "Призупинено", cancelled: "Скасовано", unknown: "Статус невідомий", inviteFriend: "Запросити друга", watchTogether: "Дивитися разом", inviteFriendHelp: "Друг отримає запрошення у своєму профілі й одразу потрапить на ваш таймкод.", invite: "Запросити", invited: "Надіслано", noFriends: "Спочатку додайте друзів у профілі — або скопіюйте посилання вище.", signInToInvite: "Увійдіть у профіль, щоб надсилати друзям запрошення.", onlineFriend: "У мережі", offlineFriend: "Не в мережі", previousEpisode:"Попередня серія", nextEpisode:"Наступна серія", upNext:"Далі", watchNext:"Дивитися", onlyHostChangesEpisode:"Перемикати серії може власник перегляду", episodeChanging:"Перемикаємо серію…",
         },
         en: {
           navHome: "Home", navCatalog: "Catalog", navTogether: "Together", joinRoom: "Join a room",
@@ -1053,7 +1075,7 @@
           autoplayBlocked: "Your browser blocked autoplay — press Play once.", roomCommunication: "Conversation", roomChat: "Room chat", online: "Online", connectingToRoom: "Connecting to the room…",
           messagePlaceholder: "Write a message…", send: "Send", privateRoom: "Private link-only room", almostReady: "Almost ready", introduceYourself: "What should we call you?",
           introduceText: "Other members will see this name in chat.", joinWatch: "Join the watch party", connectedMessage: "You joined the room.", memberJoined: "{name} joined.", memberLeft: "{name} left.",
-          linkCopied: "Link copied", copiedCode: "Code copied", finished: "Finished", airing: "Releasing", upcoming: "Upcoming", hiatus: "On hiatus", cancelled: "Cancelled", unknown: "Unknown status", inviteFriend: "Invite friend", watchTogether: "Watch together", inviteFriendHelp: "Your friend gets an invitation in their profile and joins at your current timestamp.", invite: "Invite", invited: "Sent", noFriends: "Add friends in your profile first, or copy the link above.", signInToInvite: "Sign in to invite friends directly.", onlineFriend: "Online", offlineFriend: "Offline",
+          linkCopied: "Link copied", copiedCode: "Code copied", finished: "Finished", airing: "Releasing", upcoming: "Upcoming", hiatus: "On hiatus", cancelled: "Cancelled", unknown: "Unknown status", inviteFriend: "Invite friend", watchTogether: "Watch together", inviteFriendHelp: "Your friend gets an invitation in their profile and joins at your current timestamp.", invite: "Invite", invited: "Sent", noFriends: "Add friends in your profile first, or copy the link above.", signInToInvite: "Sign in to invite friends directly.", onlineFriend: "Online", offlineFriend: "Offline", previousEpisode:"Previous episode", nextEpisode:"Next episode", upNext:"Up next", watchNext:"Watch", onlyHostChangesEpisode:"Only the watch owner can change episodes", episodeChanging:"Changing episode…",
         },
         ru: {
           navHome: "Главная", navCatalog: "Каталог", navTogether: "Вместе", joinRoom: "Войти в комнату",
@@ -1080,7 +1102,7 @@
           autoplayBlocked: "Браузер заблокировал автозапуск — нажмите Play один раз.", roomCommunication: "Общение", roomChat: "Чат комнаты", online: "Онлайн", connectingToRoom: "Подключаемся к комнате…",
           messagePlaceholder: "Написать сообщение…", send: "Отправить", privateRoom: "Приватная комната по ссылке", almostReady: "Почти готово", introduceYourself: "Как вас показывать в комнате?",
           introduceText: "Это имя увидят другие участники в чате.", joinWatch: "Присоединиться к просмотру", connectedMessage: "Вы подключились к комнате.", memberJoined: "{name} присоединился(-лась).", memberLeft: "{name} вышел(-ла).",
-          linkCopied: "Ссылка скопирована", copiedCode: "Код скопирован", finished: "Завершён", airing: "Выходит", upcoming: "Анонсирован", hiatus: "Приостановлен", cancelled: "Отменён", unknown: "Статус неизвестен", inviteFriend: "Пригласить друга", watchTogether: "Смотреть вместе", inviteFriendHelp: "Друг получит приглашение в профиле и сразу попадёт на ваш таймкод.", invite: "Пригласить", invited: "Отправлено", noFriends: "Сначала добавьте друзей в профиле — или скопируйте ссылку выше.", signInToInvite: "Войдите в профиль, чтобы отправлять друзьям приглашения.", onlineFriend: "В сети", offlineFriend: "Не в сети",
+          linkCopied: "Ссылка скопирована", copiedCode: "Код скопирован", finished: "Завершён", airing: "Выходит", upcoming: "Анонсирован", hiatus: "Приостановлен", cancelled: "Отменён", unknown: "Статус неизвестен", inviteFriend: "Пригласить друга", watchTogether: "Смотреть вместе", inviteFriendHelp: "Друг получит приглашение в профиле и сразу попадёт на ваш таймкод.", invite: "Пригласить", invited: "Отправлено", noFriends: "Сначала добавьте друзей в профиле — или скопируйте ссылку выше.", signInToInvite: "Войдите в профиль, чтобы отправлять друзьям приглашения.", onlineFriend: "В сети", offlineFriend: "Не в сети", previousEpisode:"Предыдущая серия", nextEpisode:"Следующая серия", upNext:"Далее", watchNext:"Смотреть", onlyHostChangesEpisode:"Переключать серии может владелец просмотра", episodeChanging:"Переключаем серию…",
         },
       };
 
@@ -1500,6 +1522,8 @@
         let kodikPaused = true;
         let kodikSample = null;
         let rejectedShortSource = false;
+        let animeDetail = null;
+        const watchSessionId = crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
         function setOnlineCount(value) {
           const count=Math.max(1,Number(value)||1);
@@ -1533,6 +1557,30 @@
           fileStatus.classList.remove("success", "error");
           if (state) fileStatus.classList.add(state);
         }
+
+        function neighboringEpisode(direction) {
+          if (!animeDetail?.episodes?.length || !roomData) return null;
+          const available=animeDetail.episodes.filter((episode)=>roomData.source_type==="local_file"||(episode.sources||[]).length>0).map((episode)=>episode.number).sort((a,b)=>a-b);
+          const index=available.indexOf(roomData.episode_number);if(index<0)return null;return available[index+direction]??null;
+        }
+
+        function updateEpisodeNavigation() {
+          const previous=neighboringEpisode(-1);const next=neighboringEpisode(1);const canChange=signedInAccount?.id===roomData?.host_id;
+          const previousButton=document.querySelector("#previous-episode");const nextButton=document.querySelector("#next-episode");
+          previousButton.disabled=!previous||!canChange;nextButton.disabled=!next||!canChange;previousButton.dataset.episode=previous||"";nextButton.dataset.episode=next||"";
+          if(!canChange){previousButton.title=t("onlyHostChangesEpisode");nextButton.title=t("onlyHostChangesEpisode");}else{previousButton.title=t("previousEpisode");nextButton.title=t("nextEpisode");}
+          const card=document.querySelector("#next-episode-card");card.hidden=!next;document.querySelector("#next-episode-cta").disabled=!canChange;
+          if(next){document.querySelector("#next-episode-title").textContent=t("episodeNumber",{count:next});document.querySelector("#next-episode-image").src=roomData.anime?.poster_url||"";document.querySelector("#next-episode-cta").dataset.episode=String(next);}
+        }
+
+        async function changeEpisode(number) {
+          if(!number||signedInAccount?.id!==roomData?.host_id)return;
+          document.querySelectorAll(".episode-nav-button,#next-episode-cta").forEach((button)=>button.disabled=true);setPlayerStatus(t("episodeChanging"));await sendWatchHeartbeat({ended:false});
+          try{await api(`/api/rooms/${code}/episode`,{method:"PATCH",body:JSON.stringify({episode_number:Number(number)})});location.reload();}catch(error){showToast(error.message,"error");updateEpisodeNavigation();}
+        }
+        document.querySelector("#previous-episode").addEventListener("click",(event)=>changeEpisode(event.currentTarget.dataset.episode));
+        document.querySelector("#next-episode").addEventListener("click",(event)=>changeEpisode(event.currentTarget.dataset.episode));
+        document.querySelector("#next-episode-cta").addEventListener("click",(event)=>changeEpisode(event.currentTarget.dataset.episode));
 
         function attachManagedSource(sourceType, sourceUrl) {
           fileDrop.classList.add("hidden");
@@ -1574,6 +1622,8 @@
           if (roomData.source_type === "local_file" && roomData.source_reference) {
             setPlayerStatus(t("selectedInRoom", { name: roomData.source_reference }));
           }
+          if(roomData.anime?.id){try{animeDetail=await api(`/api/anime/${roomData.anime.id}`);}catch{animeDetail=null;}}
+          updateEpisodeNavigation();
         } catch (error) {
           showToast(error.message, "error");
           connectionStatus.textContent = t("roomNotFound");
@@ -1595,6 +1645,7 @@
           document.querySelector("#room-anime-title").textContent = roomData?.anime ? displayTitle(roomData.anime) : t("sharedWatch");
           document.querySelector("#room-episode").textContent = t("episodeNumber", { count: roomData?.episode_number || 1 });
           if (connectionStatus.classList.contains("connected")) connectionStatus.textContent = t("synchronized");
+          updateEpisodeNavigation();
         }
         window.addEventListener("languagechange", updateRoomLanguage);
 
@@ -1614,24 +1665,41 @@
           return Number(player.currentTime || 0);
         }
 
-        async function saveWatchProgress(keepalive = false) {
+        function currentPlaybackDuration() {
+          if (isYouTubeSource() && youtubeReady) return Number(youtubePlayer.getDuration() || 0);
+          if (isKodikSource() && kodikDuration > 0) return Number(kodikDuration);
+          if (Number.isFinite(player.duration) && player.duration > 0) return Number(player.duration);
+          return expectedEpisodeSeconds();
+        }
+
+        function isPlaybackPlaying() {
+          if (isYouTubeSource()) return youtubeReady && youtubePlayer.getPlayerState() === window.YT.PlayerState.PLAYING;
+          if (isKodikSource()) return kodikReady && !kodikPaused;
+          return Boolean(player.currentSrc || player.src) && !player.paused && !player.ended;
+        }
+
+        async function sendWatchHeartbeat({ keepalive=false, ended=false } = {}) {
           if (!signedInAccount || !roomData?.anime?.id) return;
           const currentTime = Math.max(0, currentPlaybackTime());
-          const expectedSeconds = expectedEpisodeSeconds();
           try {
-            await fetch("/api/progress", {
+            await fetch("/api/watch/heartbeat", {
               method: "POST",
               keepalive,
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
+                session_id: watchSessionId,
                 anime_id: roomData.anime.id,
                 episode_number: roomData.episode_number,
-                current_time: currentTime,
-                completed: expectedSeconds > 0 && currentTime >= expectedSeconds * .9,
+                position: currentTime,
+                duration: currentPlaybackDuration() || null,
+                playing: isPlaybackPlaying() && document.visibilityState === "visible" && !ended,
+                visible: document.visibilityState === "visible",
+                playback_rate: currentPlaybackRate(),
+                ended,
               }),
             });
           } catch {
-            // Progress is optional and must never interrupt synchronized playback.
+            // Tracking is optional and must never interrupt synchronized playback.
           }
         }
 
@@ -1738,9 +1806,9 @@
                 },
                 onStateChange: (event) => {
                   if (!youtubeReady || applyingRemote || rejectedShortSource) return;
-                  if (event.data === window.YT.PlayerState.PLAYING) send("play");
-                  else if (event.data === window.YT.PlayerState.PAUSED) send("pause");
-                  else if (event.data === window.YT.PlayerState.ENDED) send("pause");
+                  if (event.data === window.YT.PlayerState.PLAYING) { send("play"); sendWatchHeartbeat(); }
+                  else if (event.data === window.YT.PlayerState.PAUSED) { send("pause"); sendWatchHeartbeat(); }
+                  else if (event.data === window.YT.PlayerState.ENDED) { send("pause"); sendWatchHeartbeat({ended:true}); }
                 },
                 onPlaybackRateChange: () => {
                   if (youtubeReady && !applyingRemote) send("rate");
@@ -1797,10 +1865,15 @@
             kodikPaused = false;
             kodikSample = { time: kodikCurrentTime, at: performance.now() };
             if (!applyingRemote) send("play");
+            sendWatchHeartbeat();
           } else if (message.event === "pause") {
             kodikPaused = true;
             kodikSample = { time: kodikCurrentTime, at: performance.now() };
             if (!applyingRemote) send("pause");
+            sendWatchHeartbeat();
+          } else if (message.event === "ended") {
+            kodikPaused = true;
+            sendWatchHeartbeat({ ended: true });
           } else if (message.event === "episode_changed") {
             const expectedEpisode = Number(roomData?.episode_number || 1);
             if (Number(message.episode) !== expectedEpisode) {
@@ -1898,6 +1971,8 @@
             addChatMessage({ content: t("memberJoined", { name: message.display_name }) }, "system-message", ownUserId);
           } else if (message.type === "member_left" && message.user_id !== ownUserId) {
             addChatMessage({ content: t("memberLeft", { name: message.display_name }) }, "system-message", ownUserId);
+          } else if (message.type === "episode_changed") {
+            location.reload();
           } else if (message.type === "source_ready") {
             fileStatusText.removeAttribute("data-i18n");
             fileStatusText.textContent = t("fileMatches", { name: message.file_name || t("episodeReady") });
@@ -1941,9 +2016,11 @@
 
         connectSocket();
         const heartbeat = window.setInterval(() => send("ping", { client_time: new Date().toISOString() }), 25000);
-        const progressTimer = window.setInterval(() => saveWatchProgress(), 30000);
+        const progressTimer = window.setInterval(() => sendWatchHeartbeat(), 15000);
+        const visibilityHeartbeat=()=>sendWatchHeartbeat();
+        document.addEventListener("visibilitychange",visibilityHeartbeat);
         window.addEventListener("beforeunload", () => {
-          saveWatchProgress(true);
+          sendWatchHeartbeat({keepalive:true});
           window.clearInterval(heartbeat);
           window.clearInterval(progressTimer);
           window.clearInterval(youtubePoll);
@@ -1952,6 +2029,7 @@
           hls?.destroy();
           youtubePlayer?.destroy?.();
           window.removeEventListener("message", handleKodikMessage);
+          document.removeEventListener("visibilitychange",visibilityHeartbeat);
           if (kodikMount.src) kodikMount.src = "about:blank";
         });
 
@@ -2000,8 +2078,9 @@
         player.addEventListener("error", () => {
           if (!rejectedShortSource && ["licensed_hls", "anilibria_hls", "licensed_mp4"].includes(roomData?.source_type)) setPlayerStatus(t("videoLoadFailed"), "error");
         });
-        player.addEventListener("play", () => { if (!applyingRemote) send("play"); });
-        player.addEventListener("pause", () => { if (!applyingRemote) send("pause"); saveWatchProgress(); });
+        player.addEventListener("play", () => { if (!applyingRemote) send("play"); sendWatchHeartbeat(); });
+        player.addEventListener("pause", () => { if (!applyingRemote) send("pause"); sendWatchHeartbeat(); });
+        player.addEventListener("ended",()=>sendWatchHeartbeat({ended:true}));
         player.addEventListener("seeked", () => { if (!applyingRemote) send("seek"); });
         player.addEventListener("ratechange", () => { if (!applyingRemote) send("rate"); });
 
