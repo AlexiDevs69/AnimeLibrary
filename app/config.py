@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 from pydantic import field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
@@ -30,7 +29,7 @@ class Settings(BaseSettings):
     kodik_token: str = ""
     kodik_player_origins: Annotated[list[str], NoDecode] = ["https://kodik.info"]
     kodik_sync_ttl_seconds: int = 6 * 60 * 60
-    kodik_max_translations: int = 8
+    kodik_max_translations: int = 12
     admin_api_key: str = ""
     session_cookie_name: str = "anime_session"
     session_cookie_secure: bool = True
