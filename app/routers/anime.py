@@ -8,7 +8,6 @@ from app import crud
 from app.anilibria import AniLibriaError
 from app.anilist import AniListError, fetch_anime
 from app.database import get_db
-from app.kodik import KodikError
 from app.schemas import AnimeDetailOut, AnimeOut, EpisodeOut, VideoSourceOut
 
 router = APIRouter(prefix="/api/anime", tags=["anime"])
@@ -43,14 +42,7 @@ async def anime_detail(
     try:
         changed = await crud.sync_anilibria_sources(db, anime)
     except AniLibriaError as exc:
-        # The catalog remains usable even when the optional video provider is down.
         logger.warning("AniLibria sync failed for anime %s: %s", anime_id, exc)
-    try:
-        changed = await crud.sync_kodik_releases(db, anime) or changed
-    except KodikError as exc:
-        # Kodik is an optional fallback; a provider outage must not break AniList
-        # metadata or already cached video sources.
-        logger.warning("Kodik sync failed for anime %s: %s", anime_id, exc)
     if changed:
         anime = await crud.get_anime_detail(db, anime_id)
         if anime is None:
@@ -64,38 +56,17 @@ async def anime_detail(
             title=episode.title,
             thumbnail_url=episode.thumbnail_url,
             duration=episode.duration,
-            sources=sorted(
-                [
-                    VideoSourceOut(
-                        id=source.id,
-                        source_type=source.source_type,
-                        region=source.region,
-                        language=source.language,
-                        label=source.label
-                        or (
-                            "AniLiberty"
-                            if source.source_type == "anilibria_hls"
-                            else "YouTube Official"
-                            if source.source_type == "official_youtube"
-                            else None
-                        ),
-                    )
-                    for source in episode.sources
-                    if source.is_active and source.source_type in crud.MANAGED_SOURCE_TYPES
-                ]
-                + [
-                    VideoSourceOut(
-                        id=release.id,
-                        source_type="kodik_embed",
-                        region=None,
-                        language=None,
-                        label=release.translation_title or "Kodik",
-                    )
-                    for release in anime.kodik_releases
-                    if release.is_active and episode.number <= release.episodes_count
-                ],
-                key=lambda item: crud.SOURCE_PRIORITY.get(item.source_type, 9),
-            ),
+            sources=[
+                VideoSourceOut(
+                    id=source.id,
+                    source_type="anilibria_hls",
+                    region=source.region,
+                    language=source.language,
+                    label="AniLiberty",
+                )
+                for source in episode.sources
+                if source.is_active and source.source_type == "anilibria_hls"
+            ],
         )
         for episode in anime.episodes
     ]
