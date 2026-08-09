@@ -68,6 +68,9 @@
       .identity h1 { margin: 0; max-width: 700px; overflow: hidden; text-overflow: ellipsis; font: 750 clamp(28px, 4vw, 46px)/1.05 Georgia, "Times New Roman", serif; letter-spacing: -.035em; }
       .username { margin: 7px 0 0; color: rgba(237,243,243,.7); font-size: 14px; }
       .bio { max-width: 660px; margin: 12px 0 0; color: #c2cbce; font-size: 14px; line-height: 1.55; }
+      .profile-tags { min-height: 24px; margin-top: 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+      .profile-tag { min-height: 23px; padding: 0 8px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(155,200,220,.22); border-radius: 7px 7px 7px 3px; background: rgba(8,14,18,.58); color: #c8dce2; font-size: 9px; font-weight: 800; letter-spacing: .02em; backdrop-filter: blur(8px); }
+      .profile-tag::before { content: ""; width: 5px; height: 5px; border-radius: 2px; background: var(--green); box-shadow: 0 0 8px rgba(145,181,140,.38); }
       .hero-actions { display: flex; gap: 10px; padding-bottom: 7px; }
       .button { min-height: 42px; position: relative; overflow: hidden; border: 1px solid var(--line-strong); border-radius: 10px; padding: 0 15px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; background: rgba(7,11,14,.58); color: var(--text); font-weight: 750; cursor: pointer; backdrop-filter: blur(10px); transition: transform .18s ease, border-color .18s ease, background .18s ease; }
       .button::after { content: ""; position: absolute; inset: -20% auto -20% -35%; width: 28%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.12), transparent); transform: skewX(-18deg); }
@@ -86,6 +89,41 @@
       .tab.active::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: linear-gradient(90deg, var(--blue), var(--green)); }
       .section { margin-top: 28px; animation: riseIn .58s .16s cubic-bezier(.2,.7,.2,1) both; }
       .section + .section { animation-delay: .24s; }
+      .level-panel { --rank-color: #8fb8a1; --rank-soft: rgba(143,184,161,.18); min-height: 112px; margin-bottom: 12px; padding: 18px 50px 18px 20px; display: grid; grid-template-columns: 72px minmax(0,1fr) auto; align-items: center; gap: 18px; overflow: hidden; position: relative; border: 1px solid color-mix(in srgb, var(--rank-color) 36%, transparent); border-radius: 14px 14px 14px 5px; background: linear-gradient(125deg, var(--rank-soft), rgba(14,24,29,.96) 57%, rgba(10,16,20,.98)); box-shadow: 0 20px 50px rgba(0,0,0,.17); transition: border-color .35s ease, background .35s ease; }
+      .level-panel::after { content: ""; position: absolute; width: 190px; height: 190px; right: -70px; top: -95px; border: 1px solid color-mix(in srgb, var(--rank-color) 22%, transparent); border-radius: 50%; box-shadow: 0 0 0 28px color-mix(in srgb, var(--rank-color) 4%, transparent), 0 0 0 58px color-mix(in srgb, var(--rank-color) 2%, transparent); }
+      .level-orb { width: 72px; height: 72px; position: relative; z-index: 1; display: grid; place-items: center; border: 1px solid color-mix(in srgb, var(--rank-color) 66%, transparent); border-radius: 20px 20px 20px 7px; background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--rank-color) 32%, transparent), transparent 36%), #12212a; color: color-mix(in srgb, var(--rank-color) 72%, white); font: 800 25px/1 Georgia, serif; box-shadow: inset 0 0 22px var(--rank-soft), 0 14px 28px rgba(0,0,0,.25), 0 0 26px color-mix(in srgb, var(--rank-color) 12%, transparent); }
+      .level-copy { min-width: 0; position: relative; z-index: 1; }
+      .level-copy small { display: block; color: var(--blue); font-size: 9px; font-weight: 850; letter-spacing: .13em; text-transform: uppercase; }
+      .level-copy h2 { margin: 6px 0 10px; font: 700 22px/1.1 Georgia, serif; }
+      .level-track { height: 8px; max-width: 560px; overflow: hidden; border: 1px solid rgba(255,255,255,.05); border-radius: 999px; background: rgba(2,7,9,.55); }
+      .level-track span { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, color-mix(in srgb, var(--rank-color) 58%, #5f91a7), var(--rank-color)); box-shadow: 0 0 16px var(--rank-soft); transition: width .7s cubic-bezier(.2,.75,.2,1); }
+      .level-xp { position: relative; z-index: 1; color: #cfdddd; text-align: right; font-size: 11px; font-weight: 800; }
+      .level-xp span { display: block; margin-top: 5px; color: var(--muted); font-size: 9px; font-weight: 600; }
+      .level-open { position: absolute; z-index: 3; right: 12px; top: 12px; width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid color-mix(in srgb, var(--rank-color) 28%, transparent); border-radius: 8px; background: rgba(5,10,13,.38); color: color-mix(in srgb, var(--rank-color) 72%, white); cursor: pointer; }
+      .level-open:hover { background: var(--rank-soft); }
+      .level-open svg { width: 15px; height: 15px; }
+      .progression-quick { margin-bottom: 24px; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }
+      .quick-progress { min-width: 0; min-height: 66px; padding: 11px 13px; display: grid; grid-template-columns: 34px minmax(0,1fr); align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 11px 11px 11px 4px; background: rgba(13,18,22,.78); }
+      .quick-icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 9px 9px 9px 3px; background: rgba(155,200,220,.08); color: var(--blue); font-size: 15px; }
+      .quick-progress strong, .quick-progress span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .quick-progress strong { color: #dce7e8; font-size: 13px; }
+      .quick-progress span { margin-top: 3px; color: var(--muted); font-size: 9px; }
+      .quick-track { grid-column: 1 / -1; height: 4px; margin-top: -1px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.055); }
+      .quick-track i { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg,var(--blue),var(--green)); }
+      .achievement-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }
+      .achievement-card { min-width: 0; min-height: 104px; padding: 13px; position: relative; overflow: hidden; border: 1px solid var(--line); border-radius: 12px 12px 12px 4px; background: var(--panel); }
+      .achievement-card.unlocked { border-color: rgba(145,181,140,.28); background: linear-gradient(135deg,rgba(42,70,51,.26),rgba(13,18,22,.94)); }
+      .achievement-card.locked { filter: saturate(.45); opacity: .67; }
+      .achievement-top { display: flex; align-items: center; gap: 9px; }
+      .achievement-icon { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border: 1px solid rgba(155,200,220,.13); border-radius: 9px 9px 9px 3px; background: rgba(155,200,220,.06); font-size: 15px; }
+      .achievement-card.unlocked .achievement-icon { color: #cfe2d1; background: rgba(145,181,140,.12); }
+      .achievement-copy { min-width: 0; }
+      .achievement-copy strong, .achievement-copy span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .achievement-copy strong { font-size: 11px; }
+      .achievement-copy span { margin-top: 3px; color: var(--muted); font-size: 8px; }
+      .achievement-progress { height: 5px; margin-top: 13px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.055); }
+      .achievement-progress i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg,#5f91a7,#91b58c); }
+      .achievement-value { margin-top: 6px; display: block; color: var(--muted); text-align: right; font-size: 8px; }
       .section-heading { min-height: 34px; display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
       .section-heading h2 { margin: 0; font: 700 21px/1.1 Georgia, "Times New Roman", serif; letter-spacing: -.015em; }
       .count { display: inline-grid; place-items: center; min-width: 24px; height: 22px; margin-left: 6px; padding: 0 7px; border-radius: 7px; background: rgba(155,200,220,.1); color: var(--blue); font: 750 11px/1 system-ui; }
@@ -162,6 +200,58 @@
       .recent-item strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
       .recent-item span { display: block; margin-top: 4px; color: var(--muted); font-size: 9px; }
       .privacy-note { padding: 26px 20px; color: var(--muted); text-align: center; line-height: 1.5; font-size: 13px; }
+      .wall-compose { padding: 14px; border: 1px solid var(--line); border-radius: 13px 13px 13px 5px; background: rgba(13,18,22,.82); }
+      .wall-compose textarea { width: 100%; min-height: 92px; resize: vertical; border: 0; outline: 0; background: transparent; color: var(--text); line-height: 1.55; }
+      .wall-compose-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 11px; border-top: 1px solid var(--line); }
+      .wall-compose-footer span { color: var(--muted); font-size: 10px; }
+      .wall-list { margin-top: 12px; display: grid; gap: 10px; }
+      .wall-post { position: relative; padding: 15px; display: grid; grid-template-columns: 45px minmax(0,1fr) auto; gap: 12px; border: 1px solid var(--line); border-radius: 13px 13px 13px 5px; background: var(--panel); animation: cardIn .4s var(--delay,0ms) ease both; }
+      .wall-post.reply { margin-left: 34px; border-color: rgba(155,200,220,.17); background: rgba(15,23,28,.9); }
+      .wall-avatar { width: 45px; height: 45px; overflow: hidden; display: grid; place-items: center; border: 1px solid var(--line-strong); border-radius: 11px 11px 11px 4px; background: #142129; color: var(--blue); font-size: 11px; font-weight: 850; }
+      .wall-avatar img { width: 100%; height: 100%; object-fit: cover; }
+      .wall-body { min-width: 0; }
+      .wall-author { display: flex; align-items: baseline; flex-wrap: wrap; gap: 7px; }
+      .wall-author strong { font-size: 12px; }
+      .wall-author span { color: var(--muted); font-size: 9px; }
+      .wall-content { margin: 8px 0 0; color: #cbd5d7; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.55; }
+      .wall-actions { margin-top: 9px; display: flex; gap: 12px; }
+      .wall-link { padding: 0; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 9px; font-weight: 750; }
+      .wall-link:hover { color: var(--blue); }
+      .wall-delete { width: 28px; height: 28px; border: 0; border-radius: 8px; background: transparent; color: #68777d; cursor: pointer; }
+      .wall-delete:hover { background: rgba(214,124,124,.08); color: var(--danger); }
+      .tag-selector { display: grid; gap: 9px; padding: 11px; border: 1px solid var(--line); border-radius: 12px; background: #090e11; }
+      .tag-selector-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+      .tag-selector-head strong { color: #d8e3e4; font-size: 11px; }
+      .tag-counter { min-width: 38px; height: 24px; display: grid; place-items: center; border-radius: 7px; background: rgba(155,200,220,.08); color: var(--blue); font-size: 9px; }
+      .tag-search { height: 38px; }
+      .tag-categories { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 1px; }
+      .tag-category { min-width: max-content; height: 30px; padding: 0 9px; border: 1px solid var(--line); border-radius: 8px; background: #0e1519; color: var(--muted); cursor: pointer; font-size: 9px; font-weight: 750; }
+      .tag-category.active { border-color: rgba(155,200,220,.28); background: #172127; color: #dce8e9; }
+      .tag-picker { max-height: 276px; overflow-y: auto; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; padding-right: 3px; }
+      .tag-choice { min-width: 0; min-height: 54px; padding: 8px 9px; display: grid; grid-template-columns: 29px minmax(0,1fr) 18px; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 9px 9px 9px 3px; background: #0d1418; color: var(--muted); cursor: pointer; text-align: left; }
+      .tag-choice:hover { border-color: rgba(155,200,220,.25); background: #111a1f; }
+      .tag-choice.active { border-color: rgba(145,181,140,.45); background: rgba(54,85,62,.35); color: #d9e7dc; }
+      .tag-choice-icon { width: 29px; height: 29px; display: grid; place-items: center; border-radius: 8px 8px 8px 3px; background: rgba(155,200,220,.07); font-size: 13px; }
+      .tag-choice-copy { min-width: 0; }
+      .tag-choice-copy strong, .tag-choice-copy span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .tag-choice-copy strong { color: #cbd7d9; font-size: 9px; }
+      .tag-choice-copy span { margin-top: 3px; color: #64747a; font-size: 7px; text-transform: uppercase; letter-spacing: .08em; }
+      .tag-check { color: transparent; font-size: 12px; }
+      .tag-choice.active .tag-check { color: #a9ceae; }
+      .modal-card.rank-card { width: min(760px,100%); }
+      .rank-summary { margin-bottom: 14px; padding: 14px; display: flex; align-items: center; gap: 13px; border: 1px solid var(--line); border-radius: 12px; background: rgba(155,200,220,.04); }
+      .rank-summary-orb { width: 48px; height: 48px; flex: none; display: grid; place-items: center; border-radius: 13px 13px 13px 4px; background: #132128; font: 800 17px Georgia,serif; }
+      .rank-summary strong, .rank-summary span { display: block; }
+      .rank-summary span { margin-top: 4px; color: var(--muted); font-size: 9px; }
+      .rank-map { display: grid; gap: 7px; }
+      .rank-row { --tier-color: #73858c; min-height: 56px; padding: 9px 11px; display: grid; grid-template-columns: 34px minmax(0,1fr) auto; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 10px 10px 10px 3px; background: rgba(255,255,255,.018); opacity: .56; }
+      .rank-row.unlocked { opacity: .88; border-color: color-mix(in srgb,var(--tier-color) 24%,transparent); }
+      .rank-row.current { opacity: 1; border-color: color-mix(in srgb,var(--tier-color) 58%,transparent); background: color-mix(in srgb,var(--tier-color) 10%,#0d1418); box-shadow: inset 3px 0 var(--tier-color); }
+      .rank-node { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 9px 9px 9px 3px; background: color-mix(in srgb,var(--tier-color) 14%,#10171b); color: var(--tier-color); font: 800 10px Georgia,serif; }
+      .rank-row strong, .rank-row span { display: block; }
+      .rank-row strong { font-size: 11px; }
+      .rank-row span { margin-top: 3px; color: var(--muted); font-size: 8px; }
+      .rank-state { color: var(--muted); font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
 
       .auth-shell { min-height: calc(100vh - 70px); display: grid; place-items: center; padding: 30px 18px; }
       .auth-card { width: min(460px, 100%); overflow: hidden; border: 1px solid var(--line-strong); border-radius: 18px 18px 18px 6px; background: rgba(13,18,22,.94); box-shadow: var(--shadow); }
@@ -265,6 +355,7 @@
         .page { grid-template-columns: 1fr; }
         .sidebar { grid-template-columns: 1fr 1fr; }
         .anime-grid { grid-template-columns: repeat(3, minmax(0,1fr)); }
+        .achievement-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
       }
       @media (max-width: 760px) {
         .topbar { height: 60px; }
@@ -281,6 +372,11 @@
         .anime-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
         .pinned-grid .anime-card:first-child { grid-column: span 2; }
         .sidebar { grid-template-columns: 1fr; }
+        .level-panel { grid-template-columns: 58px minmax(0,1fr); padding: 15px; }
+        .level-orb { width: 58px; height: 58px; border-radius: 16px 16px 16px 6px; font-size: 20px; }
+        .level-xp { grid-column: 2; margin-top: -8px; text-align: left; }
+        .progression-quick { grid-template-columns: 1fr; }
+        .wall-post.reply { margin-left: 14px; }
       }
       @media (max-width: 480px) {
         .hero-inner { padding-left: 16px; padding-right: 16px; }
@@ -295,6 +391,9 @@
         .avatar-upload { width: 96px; height: 112px; }
         .crop-toolbar { gap: 7px; padding: 7px; }
         .crop-modal { padding: 8px; }
+        .achievement-grid, .tag-picker { grid-template-columns: 1fr; }
+        .rank-row { grid-template-columns: 31px minmax(0,1fr); }
+        .rank-state { grid-column: 2; }
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -352,6 +451,7 @@
               <span class="eyebrow" id="profile-label">Anime profile</span>
               <h1 id="display-name">—</h1>
               <p class="username" id="username">@—</p>
+              <div class="profile-tags" id="profile-tags"></div>
               <p class="bio" id="bio"></p>
             </div>
           </div>
@@ -364,15 +464,31 @@
 
       <main class="page">
         <div class="content">
-          <nav class="tabs"><span class="tab active" data-i18n="library">Бібліотека</span></nav>
+          <nav class="tabs"><a class="tab active" href="#library-section" data-profile-tab="library" data-i18n="library">Бібліотека</a><a class="tab" href="#wall-section" data-profile-tab="wall" data-i18n="wall">Стіна</a></nav>
+          <section class="level-panel" id="level-panel">
+            <div class="level-orb" id="level-orb">1</div>
+            <div class="level-copy"><small data-i18n="level">Рівень</small><h2 id="level-title">Новачок</h2><div class="level-track"><span id="level-progress"></span></div></div>
+            <div class="level-xp"><strong id="level-xp">0 XP</strong><span id="level-next">50 XP до наступного рівня</span></div>
+            <button class="level-open" id="open-ranks" type="button" data-i18n-title="allRanks" title="Усі ранги"><svg viewBox="0 0 24 24" fill="none"><path d="M7 4h10v5a5 5 0 0 1-10 0V4ZM5 6H3v2a4 4 0 0 0 4 4m12-6h2v2a4 4 0 0 1-4 4M12 14v4m-4 2h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </section>
+          <div class="progression-quick" id="progression-quick">
+            <article class="quick-progress"><span class="quick-icon">◆</span><div><strong id="current-streak">0</strong><span data-i18n="currentStreak">Поточна серія днів</span></div></article>
+            <article class="quick-progress"><span class="quick-icon">◇</span><div><strong id="longest-streak">0</strong><span data-i18n="longestStreak">Найкраща серія</span></div></article>
+            <article class="quick-progress"><span class="quick-icon">◷</span><div><strong id="daily-goal-value">0 / 20 хв</strong><span data-i18n="dailyGoal">Ціль на сьогодні</span></div><div class="quick-track"><i id="daily-goal-progress"></i></div></article>
+          </div>
           <div id="private-message" class="empty" hidden><div><strong data-i18n="privateProfile">Приватний профіль</strong><span data-i18n="privateText">Власник приховав свою бібліотеку й активність.</span></div></div>
+
+          <section class="section" id="achievements-section">
+            <div class="section-heading"><h2><span data-i18n="achievements">Досягнення</span><span class="count" id="achievement-count">0/0</span></h2></div>
+            <div class="achievement-grid" id="achievement-grid"></div>
+          </section>
 
           <section class="section" id="pinned-section">
             <div class="section-heading"><h2><span data-i18n="pinned">Закріплені</span><span class="count" id="pinned-count">0</span></h2></div>
             <div class="anime-grid pinned-grid" id="pinned-grid"></div>
           </section>
 
-          <section class="section">
+          <section class="section" id="library-section">
             <div class="section-heading">
               <h2><span data-i18n="library">Бібліотека</span><span class="count" id="library-count">0</span></h2>
               <select class="filter" id="library-filter">
@@ -386,6 +502,17 @@
             </div>
             <div class="anime-grid" id="library-grid"></div>
             <div class="empty" id="library-empty" hidden><div><strong data-i18n="emptyLibrary">Тут поки порожньо</strong><span data-i18n="emptyLibraryText">Додайте аніме з каталогу — обкладинки з’являться тут.</span></div></div>
+          </section>
+
+          <section class="section" id="wall-section">
+            <div class="section-heading"><h2><span data-i18n="wall">Стіна</span><span class="count" id="wall-count">0</span></h2></div>
+            <form class="wall-compose" id="wall-form" hidden>
+              <textarea name="content" maxlength="600" data-i18n-placeholder="wallPlaceholder" placeholder="Написати на стіні…" required></textarea>
+              <input name="parent_id" type="hidden">
+              <div class="wall-compose-footer"><span id="wall-reply-label" data-i18n="wallHint">Без спойлерів і токсичності</span><button class="button primary" type="submit" data-i18n="publish">Опублікувати</button></div>
+            </form>
+            <div class="wall-list" id="wall-list"></div>
+            <div class="empty" id="wall-empty" hidden><div><strong data-i18n="wallEmpty">На стіні поки тихо</strong><span data-i18n="wallEmptyText">Залиш перший коментар про профіль або добірку.</span></div></div>
           </section>
         </div>
 
@@ -443,11 +570,27 @@
             <p class="upload-help" data-i18n="uploadHelp">PNG, JPEG або WebP до 5 МБ. Сайт автоматично стисне зображення.</p>
             <label><span data-i18n="displayName">Ім’я</span><input name="display_name" required minlength="2" maxlength="40"></label>
             <label><span data-i18n="about">Про себе</span><textarea name="bio" maxlength="300"></textarea></label>
+            <div class="tag-selector">
+              <div class="tag-selector-head"><strong data-i18n="profileTags">Теги профілю · до 6</strong><span class="tag-counter" id="tag-counter">0/6</span></div>
+              <input class="tag-search" id="tag-search" type="search" data-i18n-placeholder="searchTags" placeholder="Пошук тегів…" autocomplete="off">
+              <div class="tag-categories" id="tag-categories"></div>
+              <div class="tag-picker" id="tag-picker"></div>
+            </div>
             <label class="checkbox"><input name="is_profile_private" type="checkbox"><span data-i18n="makePrivate">Приховати бібліотеку від інших</span></label>
             <p class="form-error"></p>
             <div class="save-progress" id="save-progress"><span></span></div>
             <div class="modal-actions"><button class="button" type="button" data-modal-close data-i18n="cancel">Скасувати</button><button class="button primary" type="submit" data-i18n="save">Зберегти</button></div>
           </form>
+        </div>
+      </section>
+    </div>
+
+    <div class="modal" id="ranks-modal" hidden>
+      <section class="modal-card rank-card" role="dialog" aria-modal="true" aria-labelledby="ranks-title">
+        <header class="modal-head"><h2 id="ranks-title" data-i18n="rankMap">Карта рангів</h2><button class="modal-close" type="button" data-ranks-close>×</button></header>
+        <div class="modal-body">
+          <div class="rank-summary"><div class="rank-summary-orb" id="rank-summary-level">1</div><div><strong id="rank-summary-title">Новачок</strong><span id="rank-summary-next">—</span></div></div>
+          <div class="rank-map" id="rank-map"></div>
         </div>
       </section>
     </div>
@@ -501,9 +644,22 @@
         en: { share:"Share", authTitle:"Your anime library.<br>Now truly yours.", login:"Sign in", register:"Register", loginOrEmail:"Username or email", password:"Password", enterProfile:"Open profile", displayName:"Display name", username:"Username", passwordHint:"Password · at least 10 characters", createProfile:"Create profile", editProfile:"Edit profile", logout:"Sign out", library:"Library", privateProfile:"Private profile", privateText:"The owner has hidden their library and activity.", pinned:"Pinned", all:"All", watching:"Watching", planned:"Planned", completed:"Completed", onHold:"On hold", dropped:"Dropped", emptyLibrary:"Nothing here yet", emptyLibraryText:"Add anime from the catalog and its covers will appear here.", statistics:"Statistics", watchHours:"watch hours", watchedEpisodes:"episodes watched", completedTitles:"completed titles", favoriteTitles:"favorite anime", recentActivity:"Recent activity", noActivity:"Your watches will appear here automatically.", about:"About", avatarUrl:"HTTPS avatar URL", bannerUrl:"HTTPS banner URL", changeAvatar:"Change avatar", changeBanner:"Change banner", uploadHelp:"PNG, JPEG, or WebP up to 5 MB. You can adjust the crop after selecting it.", uploading:"Uploading images…", makePrivate:"Hide library from other people", cancel:"Cancel", save:"Save", apply:"Apply", cropTitle:"Adjust photo", cropHelp:"Drag the image and zoom with the wheel or slider.", episode:"Episode {n}", minutes:"{n} min", profileCopied:"Profile link copied", saved:"Saved", removed:"Removed from library", serverError:"Server error", profile:"Profile", memberSince:"Library member since {year}", friends:"Friends", yourFriendCode:"Your code", copyCode:"Copy code", addFriend:"Add", watchInvites:"Watch invitations", incomingRequests:"Incoming requests", outgoingRequests:"Sent requests", myFriends:"My friends", accept:"Accept", decline:"Decline", cancelRequest:"Cancel", removeFriend:"Remove", joinWatch:"Join watch", online:"Online", offline:"Offline", noItems:"Nothing here yet", friendRequestSent:"Request sent", codeCopied:"Code copied", friendAdded:"You are now friends", pinAnime:"Pin anime", unpinAnime:"Unpin anime" },
         ru: { share:"Поделиться", authTitle:"Твоя аниме-библиотека.<br>Теперь действительно твоя.", login:"Войти", register:"Регистрация", loginOrEmail:"Логин или email", password:"Пароль", enterProfile:"Войти в профиль", displayName:"Имя", username:"Логин", passwordHint:"Пароль · минимум 10 символов", createProfile:"Создать профиль", editProfile:"Редактировать", logout:"Выйти", library:"Библиотека", privateProfile:"Приватный профиль", privateText:"Владелец скрыл свою библиотеку и активность.", pinned:"Закреплённые", all:"Все", watching:"Смотрю", planned:"Запланировано", completed:"Просмотрено", onHold:"Отложено", dropped:"Брошено", emptyLibrary:"Здесь пока пусто", emptyLibraryText:"Добавьте аниме из каталога — обложки появятся здесь.", statistics:"Статистика", watchHours:"часов просмотра", watchedEpisodes:"просмотренных серий", completedTitles:"завершённых тайтлов", favoriteTitles:"любимых аниме", recentActivity:"Недавняя активность", noActivity:"Просмотры появятся здесь автоматически.", about:"О себе", avatarUrl:"HTTPS-ссылка на аватар", bannerUrl:"HTTPS-ссылка на баннер", changeAvatar:"Изменить аватар", changeBanner:"Изменить баннер", uploadHelp:"PNG, JPEG или WebP до 5 МБ. После выбора можно настроить кадр.", uploading:"Загружаем изображения…", makePrivate:"Скрыть библиотеку от других", cancel:"Отмена", save:"Сохранить", apply:"Применить", cropTitle:"Настроить фото", cropHelp:"Перетаскивайте изображение, меняйте масштаб колёсиком или ползунком.", episode:"Серия {n}", minutes:"{n} мин", profileCopied:"Ссылка скопирована", saved:"Сохранено", removed:"Удалено из библиотеки", serverError:"Ошибка сервера", profile:"Профиль", memberSince:"В библиотеке с {year}", friends:"Друзья", yourFriendCode:"Ваш код", copyCode:"Копировать код", addFriend:"Добавить", watchInvites:"Приглашения смотреть", incomingRequests:"Входящие заявки", outgoingRequests:"Отправленные заявки", myFriends:"Мои друзья", accept:"Принять", decline:"Отклонить", cancelRequest:"Отменить", removeFriend:"Удалить", joinWatch:"Присоединиться", online:"В сети", offline:"Не в сети", noItems:"Пока пусто", friendRequestSent:"Заявка отправлена", codeCopied:"Код скопирован", friendAdded:"Теперь вы друзья", pinAnime:"Закрепить аниме", unpinAnime:"Открепить аниме" },
       };
-      Object.assign(translations.uk,{manageFriends:"Керувати друзями",openFriendMenu:"Заявки та додавання",requests:"Заявки",invitations:"Запрошення",collapseSection:"Згорнути",expandSection:"Розгорнути"});
-      Object.assign(translations.en,{manageFriends:"Manage friends",openFriendMenu:"Requests and adding",requests:"Requests",invitations:"Invitations",collapseSection:"Collapse",expandSection:"Expand"});
-      Object.assign(translations.ru,{manageFriends:"Управление друзьями",openFriendMenu:"Заявки и добавление",requests:"Заявки",invitations:"Приглашения",collapseSection:"Свернуть",expandSection:"Развернуть"});
+      Object.assign(translations.uk,{manageFriends:"Керувати друзями",openFriendMenu:"Заявки та додавання",requests:"Заявки",invitations:"Запрошення",collapseSection:"Згорнути",expandSection:"Розгорнути",wall:"Стіна",level:"Рівень",xpToNext:"{xp} XP до наступного рівня",profileTags:"Теги профілю · до 4",wallPlaceholder:"Написати на стіні…",wallHint:"Без спойлерів і токсичності",publish:"Опублікувати",wallEmpty:"На стіні поки тихо",wallEmptyText:"Залиш перший коментар про профіль або добірку.",reply:"Відповісти",replyingTo:"Відповідь для @{name}",delete:"Видалити",commentPublished:"Коментар опубліковано",rank_newcomer:"Новачок",rank_viewer:"Глядач",rank_senpai:"Сенпай",rank_archivist:"Архіваріус",rank_yokai:"Йокай",rank_anime_master:"Аніме-майстер",tag_night_owl:"Нічний глядач",tag_binge_watcher:"Марафонець",tag_ua_dub:"Українська озвучка",tag_subtitles:"Субтитри",tag_manga_reader:"Читає манґу",tag_classic_fan:"Класика",tag_season_hunter:"Сезонний мисливець",tag_social_watcher:"Дивимось разом",tag_collector:"Колекціонер",tag_critic:"Критик"});
+      Object.assign(translations.en,{manageFriends:"Manage friends",openFriendMenu:"Requests and adding",requests:"Requests",invitations:"Invitations",collapseSection:"Collapse",expandSection:"Expand",wall:"Wall",level:"Level",xpToNext:"{xp} XP to next level",profileTags:"Profile tags · up to 4",wallPlaceholder:"Write on the wall…",wallHint:"Keep spoilers and toxicity away",publish:"Publish",wallEmpty:"The wall is quiet",wallEmptyText:"Leave the first comment about this profile or collection.",reply:"Reply",replyingTo:"Replying to @{name}",delete:"Delete",commentPublished:"Comment published",rank_newcomer:"Newcomer",rank_viewer:"Viewer",rank_senpai:"Senpai",rank_archivist:"Archivist",rank_yokai:"Yokai",rank_anime_master:"Anime master",tag_night_owl:"Night owl",tag_binge_watcher:"Binge watcher",tag_ua_dub:"Ukrainian dub",tag_subtitles:"Subtitles",tag_manga_reader:"Manga reader",tag_classic_fan:"Classics",tag_season_hunter:"Season hunter",tag_social_watcher:"Watch together",tag_collector:"Collector",tag_critic:"Critic"});
+      Object.assign(translations.ru,{manageFriends:"Управление друзьями",openFriendMenu:"Заявки и добавление",requests:"Заявки",invitations:"Приглашения",collapseSection:"Свернуть",expandSection:"Развернуть",wall:"Стена",level:"Уровень",xpToNext:"{xp} XP до следующего уровня",profileTags:"Теги профиля · до 4",wallPlaceholder:"Написать на стене…",wallHint:"Без спойлеров и токсичности",publish:"Опубликовать",wallEmpty:"На стене пока тихо",wallEmptyText:"Оставь первый комментарий о профиле или подборке.",reply:"Ответить",replyingTo:"Ответ для @{name}",delete:"Удалить",commentPublished:"Комментарий опубликован",rank_newcomer:"Новичок",rank_viewer:"Зритель",rank_senpai:"Сенпай",rank_archivist:"Архивариус",rank_yokai:"Ёкай",rank_anime_master:"Аниме-мастер",tag_night_owl:"Ночной зритель",tag_binge_watcher:"Марафонец",tag_ua_dub:"Украинская озвучка",tag_subtitles:"Субтитры",tag_manga_reader:"Читает мангу",tag_classic_fan:"Классика",tag_season_hunter:"Сезонный охотник",tag_social_watcher:"Смотрим вместе",tag_collector:"Коллекционер",tag_critic:"Критик"});
+      Object.assign(translations.uk,{profileTags:"Теги профілю · до 6",searchTags:"Пошук тегів…",allRanks:"Усі ранги",currentStreak:"Поточна серія днів",longestStreak:"Найкраща серія",dailyGoal:"Ціль на сьогодні",achievements:"Досягнення",rankMap:"Карта рангів",nextRankAt:"Наступний ранг: {rank} на {level} рівні",maxRank:"Найвищий ранг відкрито",unlocked:"Відкрито",currentRank:"Зараз",locked:"Закрито",tagLimit:"Можна вибрати не більше 6 тегів",tagCategory_all:"Усі",tagCategory_habits:"Звички",tagCategory_format:"Формат",tagCategory_taste:"Уподобання",tagCategory_community:"Спільнота",daysShort:"дн.",minutesShort:"хв",rank_explorer:"Дослідник",rank_enthusiast:"Ентузіаст",rank_otaku:"Отаку",rank_curator:"Куратор",rank_kitsune:"Кіцуне",rank_ronin:"Ронін",rank_shogun:"Сьоґун",rank_celestial:"Небесний",rank_legend:"Легенда",tag_early_bird:"Ранній глядач",tag_daily_watcher:"Щоденний ритуал",tag_weekend_watcher:"Вихідний марафон",tag_completionist:"Завершує все",tag_rewatcher:"Передивляється",tag_slow_watcher:"Дивиться без поспіху",tag_original_voice:"Оригінальна озвучка",tag_dub_fan:"Фанат дубляжу",tag_light_novel_reader:"Ранобе",tag_seasonal_only:"Лише онґоїнґи",tag_movie_fan:"Аніме-фільми",tag_new_gen_fan:"Нове покоління",tag_action_fan:"Екшен",tag_romance_fan:"Романтика",tag_fantasy_fan:"Фентезі",tag_horror_fan:"Жахи",tag_comedy_fan:"Комедія",tag_drama_fan:"Драма",tag_mystery_fan:"Детективи",tag_slice_of_life_fan:"Повсякденність",tag_solo_watcher:"Соло-перегляд",tag_reviewer:"Оглядач",tag_list_maker:"Майстер списків",tag_spoiler_free:"Без спойлерів",tag_soundtrack_hunter:"Мисливець за OST",tag_opening_never_skip:"Не пропускає опенінґ",tag_hidden_gem_hunter:"Шукає приховані перлини",achievement_first_minute:"Перший крок",achievement_hour_one:"Перша година",achievement_watch_10_hours:"Десять годин",achievement_watch_50_hours:"Справжній марафонець",achievement_episode_10:"Десять серій",achievement_episode_50:"Пів сотні",achievement_completed_5:"Фінішер",achievement_library_25:"Домашня бібліотека",achievement_favorites_10:"Серце колекції",achievement_critic_10:"Власна думка",achievement_wall_writer:"Голос спільноти",achievement_streak_3:"Три дні поспіль",achievement_streak_7:"Тижневий ритм"});
+      Object.assign(translations.en,{profileTags:"Profile tags · up to 6",searchTags:"Search tags…",allRanks:"All ranks",currentStreak:"Current day streak",longestStreak:"Best streak",dailyGoal:"Today's goal",achievements:"Achievements",rankMap:"Rank map",nextRankAt:"Next rank: {rank} at level {level}",maxRank:"Highest rank unlocked",unlocked:"Unlocked",currentRank:"Current",locked:"Locked",tagLimit:"You can select up to 6 tags",tagCategory_all:"All",tagCategory_habits:"Habits",tagCategory_format:"Format",tagCategory_taste:"Taste",tagCategory_community:"Community",daysShort:"d",minutesShort:"min",rank_explorer:"Explorer",rank_enthusiast:"Enthusiast",rank_otaku:"Otaku",rank_curator:"Curator",rank_kitsune:"Kitsune",rank_ronin:"Ronin",rank_shogun:"Shogun",rank_celestial:"Celestial",rank_legend:"Legend",tag_early_bird:"Early bird",tag_daily_watcher:"Daily ritual",tag_weekend_watcher:"Weekend marathon",tag_completionist:"Completionist",tag_rewatcher:"Rewatcher",tag_slow_watcher:"Slow watcher",tag_original_voice:"Original voices",tag_dub_fan:"Dub fan",tag_light_novel_reader:"Light novel reader",tag_seasonal_only:"Seasonals only",tag_movie_fan:"Anime movies",tag_new_gen_fan:"New generation",tag_action_fan:"Action",tag_romance_fan:"Romance",tag_fantasy_fan:"Fantasy",tag_horror_fan:"Horror",tag_comedy_fan:"Comedy",tag_drama_fan:"Drama",tag_mystery_fan:"Mystery",tag_slice_of_life_fan:"Slice of life",tag_solo_watcher:"Solo watcher",tag_reviewer:"Reviewer",tag_list_maker:"List maker",tag_spoiler_free:"Spoiler free",tag_soundtrack_hunter:"OST hunter",tag_opening_never_skip:"Never skips openings",tag_hidden_gem_hunter:"Hidden gem hunter",achievement_first_minute:"First step",achievement_hour_one:"First hour",achievement_watch_10_hours:"Ten hours",achievement_watch_50_hours:"True marathoner",achievement_episode_10:"Ten episodes",achievement_episode_50:"Half a hundred",achievement_completed_5:"Finisher",achievement_library_25:"Home library",achievement_favorites_10:"Heart of the collection",achievement_critic_10:"Own opinion",achievement_wall_writer:"Community voice",achievement_streak_3:"Three days in a row",achievement_streak_7:"Weekly rhythm"});
+      Object.assign(translations.ru,{profileTags:"Теги профиля · до 6",searchTags:"Поиск тегов…",allRanks:"Все ранги",currentStreak:"Текущая серия дней",longestStreak:"Лучшая серия",dailyGoal:"Цель на сегодня",achievements:"Достижения",rankMap:"Карта рангов",nextRankAt:"Следующий ранг: {rank} на {level} уровне",maxRank:"Высший ранг открыт",unlocked:"Открыто",currentRank:"Сейчас",locked:"Закрыто",tagLimit:"Можно выбрать не больше 6 тегов",tagCategory_all:"Все",tagCategory_habits:"Привычки",tagCategory_format:"Формат",tagCategory_taste:"Предпочтения",tagCategory_community:"Сообщество",daysShort:"дн.",minutesShort:"мин",rank_explorer:"Исследователь",rank_enthusiast:"Энтузиаст",rank_otaku:"Отаку",rank_curator:"Куратор",rank_kitsune:"Кицунэ",rank_ronin:"Ронин",rank_shogun:"Сёгун",rank_celestial:"Небесный",rank_legend:"Легенда",tag_early_bird:"Ранний зритель",tag_daily_watcher:"Ежедневный ритуал",tag_weekend_watcher:"Марафон выходного дня",tag_completionist:"Завершает всё",tag_rewatcher:"Пересматривает",tag_slow_watcher:"Смотрит без спешки",tag_original_voice:"Оригинальная озвучка",tag_dub_fan:"Фанат дубляжа",tag_light_novel_reader:"Ранобэ",tag_seasonal_only:"Только онгоинги",tag_movie_fan:"Аниме-фильмы",tag_new_gen_fan:"Новое поколение",tag_action_fan:"Экшен",tag_romance_fan:"Романтика",tag_fantasy_fan:"Фэнтези",tag_horror_fan:"Ужасы",tag_comedy_fan:"Комедия",tag_drama_fan:"Драма",tag_mystery_fan:"Детективы",tag_slice_of_life_fan:"Повседневность",tag_solo_watcher:"Соло-просмотр",tag_reviewer:"Обозреватель",tag_list_maker:"Мастер списков",tag_spoiler_free:"Без спойлеров",tag_soundtrack_hunter:"Охотник за OST",tag_opening_never_skip:"Не пропускает опенинг",tag_hidden_gem_hunter:"Ищет скрытые жемчужины",achievement_first_minute:"Первый шаг",achievement_hour_one:"Первый час",achievement_watch_10_hours:"Десять часов",achievement_watch_50_hours:"Настоящий марафонец",achievement_episode_10:"Десять серий",achievement_episode_50:"Полсотни",achievement_completed_5:"Финишер",achievement_library_25:"Домашняя библиотека",achievement_favorites_10:"Сердце коллекции",achievement_critic_10:"Своё мнение",achievement_wall_writer:"Голос сообщества",achievement_streak_3:"Три дня подряд",achievement_streak_7:"Недельный ритм"});
+      const TAGS=[
+        {id:"night_owl",category:"habits",icon:"☾"},{id:"early_bird",category:"habits",icon:"◒"},{id:"binge_watcher",category:"habits",icon:"∞"},{id:"daily_watcher",category:"habits",icon:"◉"},{id:"weekend_watcher",category:"habits",icon:"▦"},{id:"completionist",category:"habits",icon:"✓"},{id:"rewatcher",category:"habits",icon:"↻"},{id:"slow_watcher",category:"habits",icon:"◌"},
+        {id:"ua_dub",category:"format",icon:"UA"},{id:"original_voice",category:"format",icon:"字"},{id:"subtitles",category:"format",icon:"CC"},{id:"dub_fan",category:"format",icon:"声"},{id:"manga_reader",category:"format",icon:"漫"},{id:"light_novel_reader",category:"format",icon:"文"},{id:"seasonal_only",category:"format",icon:"季"},{id:"movie_fan",category:"format",icon:"◇"},
+        {id:"classic_fan",category:"taste",icon:"90"},{id:"new_gen_fan",category:"taste",icon:"N"},{id:"action_fan",category:"taste",icon:"⚔"},{id:"romance_fan",category:"taste",icon:"♡"},{id:"fantasy_fan",category:"taste",icon:"✦"},{id:"horror_fan",category:"taste",icon:"◈"},{id:"comedy_fan",category:"taste",icon:"☺"},{id:"drama_fan",category:"taste",icon:"◐"},{id:"mystery_fan",category:"taste",icon:"?"},{id:"slice_of_life_fan",category:"taste",icon:"日"},
+        {id:"season_hunter",category:"community",icon:"◎"},{id:"social_watcher",category:"community",icon:"◆"},{id:"solo_watcher",category:"community",icon:"◇"},{id:"collector",category:"community",icon:"▣"},{id:"critic",category:"community",icon:"★"},{id:"reviewer",category:"community",icon:"✎"},{id:"list_maker",category:"community",icon:"☷"},{id:"spoiler_free",category:"community",icon:"◉"},{id:"soundtrack_hunter",category:"community",icon:"♪"},{id:"opening_never_skip",category:"community",icon:"▶"},{id:"hidden_gem_hunter",category:"community",icon:"✧"}
+      ];
+      const TAG_CATEGORIES=["all","habits","format","taste","community"];
+      const PROFILE_TAGS=TAGS.map((tag)=>tag.id);
+      const RANK_VISUALS={newcomer:"#82979f",explorer:"#74a2b0",viewer:"#78ad96",enthusiast:"#8dbb72",otaku:"#c1a762",senpai:"#d18f66",curator:"#b780ad",archivist:"#8b87c9",kitsune:"#c87583",yokai:"#6eb4bc",ronin:"#ae8d6f",shogun:"#d06e61",celestial:"#7b9dde",legend:"#d1ad58",anime_master:"#d7d7e8"};
+      const ACHIEVEMENT_ICONS={first_minute:"▶",hour_one:"◷",watch_10_hours:"◉",watch_50_hours:"∞",episode_10:"10",episode_50:"50",completed_5:"✓",library_25:"▣",favorites_10:"♡",critic_10:"★",wall_writer:"✎",streak_3:"◆",streak_7:"✦"};
       let language = localStorage.getItem("anime-library-language") || "uk";
       if (!translations[language]) language = "uk";
       let profile = null;
@@ -517,6 +673,7 @@
         document.querySelector("#language").value = language;
         document.querySelectorAll("[data-i18n]").forEach((node) => { node.textContent = t(node.dataset.i18n); });
         document.querySelectorAll("[data-i18n-title]").forEach((node) => { node.title = t(node.dataset.i18nTitle); });
+        document.querySelectorAll("[data-i18n-placeholder]").forEach((node) => { node.placeholder = t(node.dataset.i18nPlaceholder); });
         document.querySelector(".auth-art h1").innerHTML = t("authTitle");
         if (profile) renderProfile(profile);
         refreshCollapseTitles();
@@ -568,27 +725,88 @@
         }
         card.append(cover, body); return card;
       }
+      let editingTags=new Set();
+      let activeTagCategory="all";
+      let tagSearchValue="";
+      function updateTagCounter() {
+        document.querySelector("#tag-counter").textContent=`${editingTags.size}/6`;
+      }
+      function renderTagCategories() {
+        const categories=document.querySelector("#tag-categories");
+        categories.replaceChildren(...TAG_CATEGORIES.map((category)=>{
+          const button=document.createElement("button");button.type="button";button.className=`tag-category${category===activeTagCategory?" active":""}`;button.textContent=t(`tagCategory_${category}`);
+          button.addEventListener("click",()=>{activeTagCategory=category;renderTagCategories();renderTagPicker();});return button;
+        }));
+      }
+      function renderTagPicker(selectedTags=null) {
+        if(selectedTags){editingTags=new Set(selectedTags.filter((tag)=>PROFILE_TAGS.includes(tag)).slice(0,6));activeTagCategory="all";tagSearchValue="";document.querySelector("#tag-search").value="";}
+        renderTagCategories();updateTagCounter();
+        const query=tagSearchValue.trim().toLocaleLowerCase(language);
+        const available=TAGS.filter((tag)=>(activeTagCategory==="all"||tag.category===activeTagCategory)&&(!query||t(`tag_${tag.id}`).toLocaleLowerCase(language).includes(query)));
+        const picker=document.querySelector("#tag-picker");
+        picker.replaceChildren(...available.map((tag)=>{
+          const button=document.createElement("button");button.type="button";button.className=`tag-choice${editingTags.has(tag.id)?" active":""}`;button.dataset.tag=tag.id;
+          const icon=document.createElement("span");icon.className="tag-choice-icon";icon.textContent=tag.icon;
+          const copy=document.createElement("span");copy.className="tag-choice-copy";const title=document.createElement("strong");title.textContent=t(`tag_${tag.id}`);const category=document.createElement("span");category.textContent=t(`tagCategory_${tag.category}`);copy.append(title,category);
+          const check=document.createElement("span");check.className="tag-check";check.textContent="✓";button.append(icon,copy,check);
+          button.addEventListener("click",()=>{if(editingTags.has(tag.id)){editingTags.delete(tag.id);button.classList.remove("active");}else if(editingTags.size>=6){showToast(t("tagLimit"),true);return;}else{editingTags.add(tag.id);button.classList.add("active");}updateTagCounter();});return button;
+        }));
+      }
+      function achievementValue(item) {
+        if(item.unit==="seconds"){
+          if(item.target>=3600)return `${(item.current/3600).toFixed(item.current<36000?1:0)} / ${Math.round(item.target/3600)} h`;
+          return `${Math.floor(item.current/60)} / ${Math.round(item.target/60)} ${t("minutesShort")}`;
+        }
+        return `${item.current} / ${item.target}${item.unit==="days"?` ${t("daysShort")}`:""}`;
+      }
+      function renderProgression(data) {
+        const color=RANK_VISUALS[data.level.rank_key]||RANK_VISUALS.newcomer;const panel=document.querySelector("#level-panel");panel.style.setProperty("--rank-color",color);panel.style.setProperty("--rank-soft",`color-mix(in srgb, ${color} 16%, transparent)`);panel.dataset.rank=data.level.rank_key;
+        document.querySelector("#level-orb").textContent=String(data.level.level);document.querySelector("#level-title").textContent=t(`rank_${data.level.rank_key}`);document.querySelector("#level-progress").style.width=`${Math.round(data.level.progress*100)}%`;document.querySelector("#level-xp").textContent=`${data.level.xp} XP`;document.querySelector("#level-next").textContent=t("xpToNext",{xp:Math.max(0,data.level.next_level_xp-data.level.xp)});
+        document.querySelector("#current-streak").textContent=`${data.streak.current_days} ${t("daysShort")}`;document.querySelector("#longest-streak").textContent=`${data.streak.longest_days} ${t("daysShort")}`;document.querySelector("#daily-goal-value").textContent=`${Math.floor(data.streak.today_seconds/60)} / ${Math.round(data.streak.daily_goal_seconds/60)} ${t("minutesShort")}`;document.querySelector("#daily-goal-progress").style.width=`${Math.round(data.streak.daily_goal_progress*100)}%`;
+        const unlocked=data.achievements.filter((item)=>item.unlocked).length;document.querySelector("#achievement-count").textContent=`${unlocked}/${data.achievements.length}`;
+        document.querySelector("#achievement-grid").replaceChildren(...data.achievements.map((item)=>{const card=document.createElement("article");card.className=`achievement-card ${item.unlocked?"unlocked":"locked"}`;const top=document.createElement("div");top.className="achievement-top";const icon=document.createElement("span");icon.className="achievement-icon";icon.textContent=ACHIEVEMENT_ICONS[item.key]||"◇";const copy=document.createElement("div");copy.className="achievement-copy";const title=document.createElement("strong");title.textContent=t(`achievement_${item.key}`);const state=document.createElement("span");state.textContent=t(item.unlocked?"unlocked":"locked");copy.append(title,state);top.append(icon,copy);const track=document.createElement("div");track.className="achievement-progress";const fill=document.createElement("i");fill.style.width=`${Math.min(100,Math.round(item.current/item.target*100))}%`;track.append(fill);const value=document.createElement("span");value.className="achievement-value";value.textContent=achievementValue(item);card.append(top,track,value);return card;}));
+        document.querySelector("#rank-summary-level").textContent=String(data.level.level);document.querySelector("#rank-summary-title").textContent=t(`rank_${data.level.rank_key}`);document.querySelector("#rank-summary-next").textContent=data.level.next_rank_key?t("nextRankAt",{rank:t(`rank_${data.level.next_rank_key}`),level:data.level.next_rank_level}):t("maxRank");
+        document.querySelector("#rank-map").replaceChildren(...data.rank_tiers.map((tier)=>{const row=document.createElement("article");row.className=`rank-row${tier.unlocked?" unlocked":""}${tier.current?" current":""}`;row.style.setProperty("--tier-color",RANK_VISUALS[tier.key]||RANK_VISUALS.newcomer);const node=document.createElement("span");node.className="rank-node";node.textContent=String(tier.min_level);const copy=document.createElement("div");const title=document.createElement("strong");title.textContent=t(`rank_${tier.key}`);const level=document.createElement("span");level.textContent=`${t("level")} ${tier.min_level}`;copy.append(title,level);const state=document.createElement("span");state.className="rank-state";state.textContent=t(tier.current?"currentRank":tier.unlocked?"unlocked":"locked");row.append(node,copy,state);return row;}));
+      }
+      function wallPost(post) {
+        const article=document.createElement("article");article.className=`wall-post${post.parent_id?" reply":""}`;
+        const avatar=document.createElement("a");avatar.className="wall-avatar";avatar.href=`/u/${encodeURIComponent(post.author.username)}`;
+        if(post.author.avatar_url){const image=document.createElement("img");image.src=post.author.avatar_url;image.alt="";avatar.append(image);}else avatar.textContent=post.author.display_name.slice(0,2).toUpperCase();
+        const body=document.createElement("div");body.className="wall-body";const author=document.createElement("div");author.className="wall-author";const name=document.createElement("strong");name.textContent=post.author.display_name;const meta=document.createElement("span");meta.textContent=`@${post.author.username} · ${new Intl.DateTimeFormat(language,{dateStyle:"medium",timeStyle:"short"}).format(new Date(post.created_at))}`;author.append(name,meta);
+        const content=document.createElement("p");content.className="wall-content";content.textContent=post.content;const actions=document.createElement("div");actions.className="wall-actions";
+        if(profile.can_post_wall&&!post.parent_id){const reply=document.createElement("button");reply.type="button";reply.className="wall-link";reply.textContent=t("reply");reply.addEventListener("click",()=>{const form=document.querySelector("#wall-form");form.parent_id.value=post.id;document.querySelector("#wall-reply-label").textContent=t("replyingTo",{name:post.author.username});form.hidden=false;form.scrollIntoView({behavior:"smooth",block:"center"});form.content.focus();});actions.append(reply);}
+        body.append(author,content,actions);article.append(avatar,body);
+        if(post.can_delete){const remove=document.createElement("button");remove.type="button";remove.className="wall-delete";remove.title=t("delete");remove.textContent="×";remove.addEventListener("click",async()=>{try{await api(`/api/profile-wall/${post.id}`,{method:"DELETE"});await loadProfile();}catch(error){showToast(error.message,true);}});article.append(remove);}return article;
+      }
+      function renderWall(data) {
+        const list=document.querySelector("#wall-list");const roots=data.wall.filter((post)=>!post.parent_id);const replies=new Map();data.wall.filter((post)=>post.parent_id).reverse().forEach((post)=>{const group=replies.get(post.parent_id)||[];group.push(post);replies.set(post.parent_id,group);});const nodes=[];
+        roots.forEach((post)=>{nodes.push(wallPost(post));(replies.get(post.id)||[]).forEach((reply)=>nodes.push(wallPost(reply)));});data.wall.filter((post)=>post.parent_id&&!data.wall.some((parent)=>parent.id===post.parent_id)).forEach((post)=>nodes.push(wallPost(post)));list.replaceChildren(...nodes);document.querySelector("#wall-count").textContent=String(data.wall_count);document.querySelector("#wall-empty").hidden=nodes.length>0;const form=document.querySelector("#wall-form");form.hidden=!data.can_post_wall;if(!form.hidden&&form.parent_id.value&&!data.wall.some((post)=>post.id===form.parent_id.value)){form.reset();document.querySelector("#wall-reply-label").textContent=t("wallHint");}
+      }
       function renderProfile(data) {
         profile = data; const user = data.user; const pinned = data.entries.filter((item) => item.is_pinned);
         document.title = `${user.display_name} · AnimeLibrary`;
         document.querySelector("#profile-label").textContent = `${t("profile")} · ${t("memberSince", { year:new Date(user.created_at).getFullYear() })}`;
         document.querySelector("#display-name").textContent = user.display_name; document.querySelector("#username").textContent = `@${user.username}`; document.querySelector("#bio").textContent = user.bio || "";
+        const tags=document.querySelector("#profile-tags");tags.replaceChildren(...(user.profile_tags||[]).map((tag)=>{const item=document.createElement("span");item.className="profile-tag";item.textContent=t(`tag_${tag}`);return item;}));tags.hidden=!user.profile_tags?.length;
+        renderProgression(data);
         const fallbackArt = pinned[0]?.anime.banner_url || pinned[0]?.anime.poster_url || ""; const heroArt = user.banner_url || fallbackArt;
         document.querySelector("#profile-hero").style.backgroundImage = heroArt ? `url("${heroArt.replaceAll('"','')}")` : "";
         const avatar = document.querySelector("#avatar"); avatar.replaceChildren(); const avatarUrl = user.avatar_url || pinned[0]?.anime.poster_url;
         if (avatarUrl) { const img = document.createElement("img"); img.src = avatarUrl; img.alt = user.display_name; avatar.append(img); } else { const span = document.createElement("span"); span.textContent = user.display_name.slice(0,2).toUpperCase(); avatar.append(span); }
         document.querySelector("#owner-actions").hidden = !data.is_owner;
-        const isPrivate = user.is_profile_private && !data.is_owner; document.querySelector("#private-message").hidden = !isPrivate; document.querySelector("#pinned-section").hidden = isPrivate; document.querySelector("#library-filter").closest(".section").hidden = isPrivate;
+        const isPrivate = user.is_profile_private && !data.is_owner; document.querySelector("#private-message").hidden = !isPrivate; document.querySelector("#pinned-section").hidden = isPrivate; document.querySelector("#library-filter").closest(".section").hidden = isPrivate;document.querySelector("#wall-section").hidden=isPrivate;document.querySelector("#achievements-section").hidden=isPrivate;document.querySelector("#progression-quick").hidden=isPrivate;
         document.querySelector("#pinned-count").textContent = pinned.length; const pinnedGrid = document.querySelector("#pinned-grid"); pinnedGrid.replaceChildren(...pinned.map((entry,index) => { const card=animeCard(entry); card.style.setProperty("--delay",`${80+index*55}ms`); return card; }));
         const filter = document.querySelector("#library-filter").value; const entries = data.entries.filter((item) => filter === "all" || item.status === filter);
         document.querySelector("#library-count").textContent = data.entries.length; const grid = document.querySelector("#library-grid"); grid.replaceChildren(...entries.map((entry,index) => { const card=animeCard(entry); card.style.setProperty("--delay",`${120+index*45}ms`); return card; })); document.querySelector("#library-empty").hidden = entries.length > 0;
-        document.querySelector("#stat-hours").textContent = Math.round(data.stats.minutes_watched / 60); document.querySelector("#stat-episodes").textContent = data.stats.episodes_watched; document.querySelector("#stat-completed").textContent = data.stats.completed_count; document.querySelector("#stat-favorites").textContent = data.stats.favorite_count;
-        const recent = document.querySelector("#recent-list"); recent.replaceChildren(...data.recent.map((entry) => { const item = document.createElement("div"); item.className = "recent-item"; const img = document.createElement("img"); img.src = entry.anime.poster_url || ""; img.alt = ""; const copy = document.createElement("div"); const title = document.createElement("strong"); title.textContent = displayTitle(entry.anime); const meta = document.createElement("span"); meta.textContent = `${t("episode",{n:entry.episode_number})} · ${t("minutes",{n:Math.round((entry.current_time||0)/60)})}`; copy.append(title,meta); item.append(img,copy); return item; })); document.querySelector("#recent-empty").hidden = data.recent.length > 0;
+        const hours=data.stats.minutes_watched/60;document.querySelector("#stat-hours").textContent=hours>0&&hours<10?hours.toFixed(1):Math.round(hours); document.querySelector("#stat-episodes").textContent = data.stats.episodes_watched; document.querySelector("#stat-completed").textContent = data.stats.completed_count; document.querySelector("#stat-favorites").textContent = data.stats.favorite_count;
+        const recent = document.querySelector("#recent-list"); recent.replaceChildren(...data.recent.map((entry) => { const item = document.createElement("div"); item.className = "recent-item"; const img = document.createElement("img"); img.src = entry.anime.poster_url || ""; img.alt = ""; const copy = document.createElement("div"); const title = document.createElement("strong"); title.textContent = displayTitle(entry.anime); const meta = document.createElement("span"); meta.textContent = `${t("episode",{n:entry.episode_number})} · ${t("minutes",{n:Math.round((entry.watched_seconds||0)/60)})}`; copy.append(title,meta); item.append(img,copy); return item; })); document.querySelector("#recent-empty").hidden = data.recent.length > 0;
+        renderWall(data);
         if (data.is_owner) {
           const form = document.querySelector("#edit-form");
           form.display_name.value=user.display_name;
           form.bio.value=user.bio||"";
           form.is_profile_private.checked=user.is_profile_private;
+          renderTagPicker(user.profile_tags||[]);
           setPreviewSource(document.querySelector("#avatar-preview"),user.avatar_url||fallbackArt);
           setPreviewSource(document.querySelector("#banner-preview"),user.banner_url||fallbackArt);
         }
@@ -603,6 +821,15 @@
       document.querySelector("#login-form").addEventListener("submit", async (event) => { event.preventDefault(); const form=event.currentTarget; form.querySelector(".form-error").textContent=""; try { await api("/api/auth/login",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(form)))}); await loadProfile(); } catch(e){form.querySelector(".form-error").textContent=e.message;} });
       document.querySelector("#register-form").addEventListener("submit", async (event) => { event.preventDefault(); const form=event.currentTarget; form.querySelector(".form-error").textContent=""; try { await api("/api/auth/register",{method:"POST",body:JSON.stringify(Object.fromEntries(new FormData(form)))}); await loadProfile(); } catch(e){form.querySelector(".form-error").textContent=e.message;} });
       document.querySelector("#library-filter").addEventListener("change", () => profile && renderProfile(profile));
+      document.querySelectorAll("[data-profile-tab]").forEach((tab)=>tab.addEventListener("click",()=>{document.querySelectorAll("[data-profile-tab]").forEach((item)=>item.classList.toggle("active",item===tab));}));
+      document.querySelector("#wall-form").addEventListener("submit",async(event)=>{event.preventDefault();if(!profile?.can_post_wall)return;const form=event.currentTarget;const submit=form.querySelector('[type="submit"]');submit.disabled=true;try{await api(`/api/profiles/${encodeURIComponent(profile.user.username)}/wall`,{method:"POST",body:JSON.stringify({content:form.content.value,parent_id:form.parent_id.value||null})});form.reset();document.querySelector("#wall-reply-label").textContent=t("wallHint");showToast(t("commentPublished"));await loadProfile();}catch(error){showToast(error.message,true);}finally{submit.disabled=false;}});
+      document.querySelector("#tag-search").addEventListener("input",(event)=>{tagSearchValue=event.target.value;renderTagPicker();});
+      const ranksModal=document.querySelector("#ranks-modal");
+      const closeRanks=()=>{ranksModal.hidden=true;};
+      document.querySelector("#open-ranks").addEventListener("click",()=>{ranksModal.hidden=false;setTimeout(()=>document.querySelector("#rank-map .current")?.scrollIntoView({block:"center"}),40);});
+      document.querySelectorAll("[data-ranks-close]").forEach((button)=>button.addEventListener("click",closeRanks));
+      ranksModal.addEventListener("click",(event)=>{if(event.target===ranksModal)closeRanks();});
+      document.addEventListener("keydown",(event)=>{if(event.key==="Escape"&&!ranksModal.hidden)closeRanks();});
       function setPreviewSource(image, source) {
         if (image.dataset.objectUrl) { URL.revokeObjectURL(image.dataset.objectUrl); delete image.dataset.objectUrl; }
         if (source) image.src=source;
@@ -701,6 +928,7 @@
         form.avatar_file.value=""; form.banner_file.value="";
         setPreviewSource(document.querySelector("#avatar-preview"),profile.user.avatar_url||profile.entries.find((item)=>item.is_pinned)?.anime.poster_url);
         setPreviewSource(document.querySelector("#banner-preview"),profile.user.banner_url||profile.entries.find((item)=>item.is_pinned)?.anime.banner_url);
+        renderTagPicker(profile.user.profile_tags||[]);
         document.querySelector("#save-progress span").style.width="0";
         document.querySelector("#edit-modal").hidden=false;
       });
@@ -713,7 +941,8 @@
           let account=profile.user; const avatarFile=pendingCrops.avatar; const bannerFile=pendingCrops.banner;
           if (avatarFile) { account=await uploadProfileImage("avatar",avatarFile); bar.style.width="44%"; }
           if (bannerFile) { account=await uploadProfileImage("banner",bannerFile); bar.style.width="76%"; }
-          await api("/api/profiles/me",{method:"PATCH",body:JSON.stringify({display_name:form.display_name.value.trim(),bio:form.bio.value.trim()||null,avatar_url:account.avatar_url||null,banner_url:account.banner_url||null,is_profile_private:form.is_profile_private.checked})});
+          const profileTags=Array.from(editingTags);
+          await api("/api/profiles/me",{method:"PATCH",body:JSON.stringify({display_name:form.display_name.value.trim(),bio:form.bio.value.trim()||null,avatar_url:account.avatar_url||null,banner_url:account.banner_url||null,profile_tags:profileTags,is_profile_private:form.is_profile_private.checked})});
           bar.style.width="100%"; await new Promise((resolve)=>setTimeout(resolve,180)); document.querySelector("#edit-modal").hidden=true; showToast(t("saved")); await loadProfile();
         } catch(e) { form.querySelector(".form-error").textContent=e.message; bar.style.width="0"; }
         finally { submit.disabled=false; }
