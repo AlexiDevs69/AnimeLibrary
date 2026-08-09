@@ -52,6 +52,51 @@ async def room_detail(
     room = await crud.get_room(db, invite_code)
     if room is None:
         raise HTTPException(status_code=404, detail="Кімнату не знайдено")
+
+    # Older catalog rooms could be created with source_type=local_file even
+    # though no file was ever selected. In that case the UI only shows the
+    # upload/drop zone and the managed player never gets a source.
+    #
+    # Repair only this exact broken state. Real local-file rooms already have
+    # a file_hash or source_reference and are left untouched.
+    needs_managed_source = (
+        room.anime_id is not None
+        and room.source_type == "local_file"
+        and room.source_reference is None
+        and room.file_hash is None
+    )
+
+    if needs_managed_source:
+        try:
+            if room.anime is not None:
+                # Refresh AniLibriya sources when their cache is stale/missing.
+                await crud.sync_anilibria_sources(db, room.anime)
+
+            resolved = await crud.resolve_room_source(
+                db,
+                anime_id=room.anime_id,
+                episode_number=room.episode_number,
+                source_id=None,
+                source_type="auto",
+            )
+
+            if resolved is not None:
+                room.source_type, room.source_reference, room.source_id = resolved
+                room.file_hash = None
+                room.current_time = 0
+                room.is_paused = True
+                room.playback_rate = 1
+                room.state_version += 1
+                room.updated_at = datetime.now(timezone.utc)
+                await db.commit()
+
+                room = await crud.get_room(db, invite_code)
+                if room is None:
+                    raise HTTPException(status_code=404, detail="Кімнату не знайдено")
+        except Exception:
+            # Provider outages must not make an existing room inaccessible.
+            await db.rollback()
+
     return crud.room_to_schema(room)
 
 
