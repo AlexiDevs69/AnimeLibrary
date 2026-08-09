@@ -1,13 +1,12 @@
 from __future__ import annotations
 
+import re
 import uuid
 from datetime import datetime
-import re
 from typing import Literal
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-
 
 SourceType = Literal[
     "auto",
@@ -110,6 +109,7 @@ class RoomOut(BaseModel):
     anime: AnimeOut | None
     episode_number: int
     source_type: str
+    source_id: uuid.UUID | None = None
     source_reference: str | None
     file_hash: str | None
     current_time: float
@@ -130,10 +130,15 @@ class RoomJoinOut(BaseModel):
     room: RoomOut
 
 
+class RoomEpisodeChangeIn(BaseModel):
+    episode_number: int = Field(ge=1, le=10000)
+
+
 class VideoSourceCreate(BaseModel):
     anilist_id: int = Field(gt=0)
     episode_number: int = Field(ge=1)
     source_type: AdminSourceType
+    label: str = Field(min_length=2, max_length=80)
     source_url: str = Field(min_length=12, max_length=2000)
     language: str = Field(default="ja", min_length=2, max_length=20)
     region: str | None = Field(default=None, min_length=2, max_length=10)
@@ -157,6 +162,11 @@ class VideoSourceCreate(BaseModel):
             return None
         return value.strip().lower()
 
+    @field_validator("label")
+    @classmethod
+    def clean_label(cls, value: str) -> str:
+        return " ".join(value.split())
+
 
 class VideoSourceAdminOut(VideoSourceOut):
     episode_id: uuid.UUID
@@ -165,6 +175,45 @@ class VideoSourceAdminOut(VideoSourceOut):
 
 
 LibraryStatus = Literal["watching", "planned", "completed", "on_hold", "dropped"]
+ProfileTag = Literal[
+    "night_owl",
+    "early_bird",
+    "binge_watcher",
+    "daily_watcher",
+    "weekend_watcher",
+    "completionist",
+    "rewatcher",
+    "slow_watcher",
+    "ua_dub",
+    "original_voice",
+    "subtitles",
+    "dub_fan",
+    "manga_reader",
+    "light_novel_reader",
+    "seasonal_only",
+    "movie_fan",
+    "classic_fan",
+    "new_gen_fan",
+    "action_fan",
+    "romance_fan",
+    "fantasy_fan",
+    "horror_fan",
+    "comedy_fan",
+    "drama_fan",
+    "mystery_fan",
+    "slice_of_life_fan",
+    "season_hunter",
+    "social_watcher",
+    "solo_watcher",
+    "collector",
+    "critic",
+    "reviewer",
+    "list_maker",
+    "spoiler_free",
+    "soundtrack_hunter",
+    "opening_never_skip",
+    "hidden_gem_hunter",
+]
 
 
 def clean_username(value: str) -> str:
@@ -239,6 +288,7 @@ class AccountOut(BaseModel):
     avatar_url: str | None
     banner_url: str | None
     bio: str | None
+    profile_tags: list[ProfileTag] = Field(default_factory=list)
     is_profile_private: bool
     created_at: datetime
 
@@ -248,6 +298,7 @@ class ProfileUpdateIn(BaseModel):
     bio: str | None = Field(default=None, max_length=300)
     avatar_url: str | None = Field(default=None, max_length=1000)
     banner_url: str | None = Field(default=None, max_length=1000)
+    profile_tags: list[ProfileTag] = Field(default_factory=list, max_length=6)
     is_profile_private: bool = False
 
     @field_validator("display_name")
@@ -268,6 +319,11 @@ class ProfileUpdateIn(BaseModel):
     def validate_image_url(cls, value: str | None) -> str | None:
         return clean_image_url(value)
 
+    @field_validator("profile_tags")
+    @classmethod
+    def unique_profile_tags(cls, values: list[ProfileTag]) -> list[ProfileTag]:
+        return list(dict.fromkeys(values))[:6]
+
 
 class LibraryEntryIn(BaseModel):
     status: LibraryStatus = "planned"
@@ -283,6 +339,62 @@ class ProgressIn(BaseModel):
     completed: bool = False
 
 
+class WatchHeartbeatIn(BaseModel):
+    session_id: uuid.UUID
+    anime_id: uuid.UUID
+    episode_number: int = Field(ge=1, le=10000)
+    position: float = Field(ge=0, le=100000)
+    duration: float | None = Field(default=None, ge=30, le=100000)
+    playing: bool = False
+    visible: bool = True
+    playback_rate: float = Field(default=1.0, ge=0.25, le=2.0)
+    ended: bool = False
+
+
+class ProfileLevelOut(BaseModel):
+    level: int
+    xp: int
+    current_level_xp: int
+    next_level_xp: int
+    progress: float
+    rank_key: str
+    rank_level: int
+    next_rank_key: str | None
+    next_rank_level: int | None
+    rank_progress: float
+
+
+class ProfileRankTierOut(BaseModel):
+    key: str
+    min_level: int
+    unlocked: bool
+    current: bool
+
+
+class ProfileStreakOut(BaseModel):
+    current_days: int
+    longest_days: int
+    today_seconds: int
+    daily_goal_seconds: int
+    daily_goal_progress: float
+
+
+class ProfileAchievementOut(BaseModel):
+    key: str
+    category: str
+    unit: Literal["seconds", "count", "days"]
+    current: int
+    target: int
+    unlocked: bool
+
+
+class WatchHeartbeatOut(BaseModel):
+    credited_seconds: int
+    total_watch_seconds: int
+    episode_completed: bool
+    level: ProfileLevelOut
+
+
 class ProfileAnimeOut(BaseModel):
     anime: AnimeOut
     status: LibraryStatus
@@ -294,6 +406,7 @@ class ProfileAnimeOut(BaseModel):
     episode_number: int | None = None
     current_time: float | None = None
     progress_completed: bool = False
+    watched_seconds: int = 0
 
 
 class ProfileStatsOut(BaseModel):
@@ -311,6 +424,7 @@ class PublicAccountOut(BaseModel):
     avatar_url: str | None
     banner_url: str | None
     bio: str | None
+    profile_tags: list[ProfileTag] = Field(default_factory=list)
     is_profile_private: bool
     created_at: datetime
 
@@ -372,9 +486,45 @@ class RoomInvitationAcceptOut(BaseModel):
     invite_code: str
 
 
+class WallAuthorOut(BaseModel):
+    id: uuid.UUID
+    username: str
+    display_name: str
+    avatar_url: str | None
+
+
+class WallPostOut(BaseModel):
+    id: uuid.UUID
+    author: WallAuthorOut
+    parent_id: uuid.UUID | None
+    content: str
+    created_at: datetime
+    can_delete: bool = False
+
+
+class WallPostCreate(BaseModel):
+    content: str = Field(min_length=1, max_length=600)
+    parent_id: uuid.UUID | None = None
+
+    @field_validator("content")
+    @classmethod
+    def clean_content(cls, value: str) -> str:
+        cleaned = "\n".join(line.rstrip() for line in value.strip().splitlines())
+        if not cleaned:
+            raise ValueError("Коментар не може бути порожнім")
+        return cleaned
+
+
 class ProfileOut(BaseModel):
     user: PublicAccountOut
     is_owner: bool
     entries: list[ProfileAnimeOut]
     recent: list[ProfileAnimeOut]
     stats: ProfileStatsOut
+    level: ProfileLevelOut
+    rank_tiers: list[ProfileRankTierOut] = Field(default_factory=list)
+    streak: ProfileStreakOut
+    achievements: list[ProfileAchievementOut] = Field(default_factory=list)
+    wall: list[WallPostOut] = Field(default_factory=list)
+    wall_count: int = 0
+    can_post_wall: bool = False
