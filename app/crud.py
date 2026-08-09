@@ -15,11 +15,9 @@ from sqlalchemy.orm import selectinload
 
 from app.anilibria import fetch_release_episodes
 from app.config import settings
-from app.kodik import build_player_url, candidates_from_results, search_by_mal_id
 from app.models import (
     Anime,
     Episode,
-    KodikRelease,
     RoomMember,
     User,
     VideoSource,
@@ -34,14 +32,8 @@ STORED_VIDEO_SOURCE_TYPES = (
     "licensed_mp4",
     "official_youtube",
 )
-MANAGED_SOURCE_TYPES = (*STORED_VIDEO_SOURCE_TYPES, "kodik_embed")
-SOURCE_PRIORITY = {
-    "licensed_hls": 0,
-    "licensed_mp4": 1,
-    "kodik_embed": 2,
-    "anilibria_hls": 3,
-    "official_youtube": 4,
-}
+MANAGED_SOURCE_TYPES = ("anilibria_hls",)
+SOURCE_PRIORITY = {"anilibria_hls": 0}
 NON_EPISODE_WORDS = (
     "trailer",
     "teaser",
@@ -241,7 +233,6 @@ async def get_anime_detail(db: AsyncSession, anime_id: uuid.UUID) -> Anime | Non
         select(Anime)
         .options(
             selectinload(Anime.episodes).selectinload(Episode.sources),
-            selectinload(Anime.kodik_releases),
         )
         .where(Anime.id == anime_id)
     )
@@ -343,68 +334,6 @@ async def sync_anilibria_sources(db: AsyncSession, anime: Anime) -> bool:
     return True
 
 
-def kodik_sync_is_due(anime: Anime) -> bool:
-    if not settings.kodik_token or anime.mal_id is None:
-        return False
-    if anime.kodik_synced_at is None:
-        return True
-    synced_at = anime.kodik_synced_at
-    if synced_at.tzinfo is None:
-        synced_at = synced_at.replace(tzinfo=timezone.utc)
-    return datetime.now(timezone.utc) - synced_at >= timedelta(
-        seconds=max(300, settings.kodik_sync_ttl_seconds)
-    )
-
-
-async def sync_kodik_releases(db: AsyncSession, anime: Anime) -> bool:
-    if not kodik_sync_is_due(anime) or anime.mal_id is None:
-        return False
-
-    results = await search_by_mal_id(anime.mal_id)
-    candidates = candidates_from_results(
-        results,
-        titles=(anime.title_english, anime.title_romaji, anime.title_native),
-        anime_episodes_count=anime.episodes_count,
-    )
-
-    existing_result = await db.execute(
-        select(KodikRelease).where(KodikRelease.anime_id == anime.id)
-    )
-    existing = {release.provider_key: release for release in existing_result.scalars()}
-    active_keys: set[str] = set()
-    for candidate in candidates:
-        active_keys.add(candidate.provider_key)
-        values = {
-            "provider_id": candidate.provider_id,
-            "player_link": candidate.player_link,
-            "content_type": candidate.content_type,
-            "season_number": candidate.season_number,
-            "episodes_count": candidate.episodes_count,
-            "translation_id": candidate.translation_id,
-            "translation_title": candidate.translation_title,
-            "translation_type": candidate.translation_type,
-            "is_active": True,
-        }
-        release = existing.get(candidate.provider_key)
-        if release is None:
-            db.add(
-                KodikRelease(
-                    anime_id=anime.id,
-                    provider_key=candidate.provider_key,
-                    **values,
-                )
-            )
-        else:
-            for field, value in values.items():
-                setattr(release, field, value)
-
-    for provider_key, release in existing.items():
-        if provider_key not in active_keys:
-            release.is_active = False
-    anime.kodik_synced_at = datetime.now(timezone.utc)
-    await db.commit()
-    return True
-
 
 async def resolve_video_source(
     db: AsyncSession,
@@ -431,35 +360,9 @@ async def resolve_video_source(
         query = query.where(VideoSource.source_type == source_type)
         if source_label:
             query = query.where(VideoSource.label == source_label)
-    query = query.order_by(
-        case(
-            (VideoSource.source_type == "licensed_hls", 0),
-            (VideoSource.source_type == "anilibria_hls", 1),
-            (VideoSource.source_type == "licensed_mp4", 2),
-            (VideoSource.source_type == "official_youtube", 4),
-            else_=9,
-        ),
-        VideoSource.created_at.asc(),
-    ).limit(1)
+    query = query.order_by(VideoSource.created_at.asc()).limit(1)
     return (await db.execute(query)).scalar_one_or_none()
 
-
-async def resolve_kodik_release(
-    db: AsyncSession,
-    *,
-    anime_id: uuid.UUID,
-    episode_number: int,
-    source_id: uuid.UUID | None,
-) -> KodikRelease | None:
-    query = select(KodikRelease).where(
-        KodikRelease.anime_id == anime_id,
-        KodikRelease.is_active.is_(True),
-        KodikRelease.episodes_count >= episode_number,
-    )
-    if source_id is not None:
-        query = query.where(KodikRelease.id == source_id)
-    query = query.order_by(KodikRelease.created_at.asc()).limit(1)
-    return (await db.execute(query)).scalar_one_or_none()
 
 
 async def resolve_room_source(
@@ -471,45 +374,23 @@ async def resolve_room_source(
     source_type: str,
     source_label: str | None = None,
 ) -> tuple[str, str, uuid.UUID] | None:
-    # Kodik is an iframe embed and isn't subject to the browser CORS
-    # restrictions that direct HLS playback (anilibria_hls / licensed_hls /
-    # licensed_mp4) runs into, so for "auto" it is tried first and is the
-    # more reliable default. A caller that explicitly asked for a specific
-    # non-kodik source_type still goes straight to resolve_video_source below.
-    if source_type in {"auto", "kodik_embed"}:
-        release = await resolve_kodik_release(
-            db,
-            anime_id=anime_id,
-            episode_number=episode_number,
-            source_id=source_id,
-        )
-        if release is not None:
-            try:
-                player_url = build_player_url(
-                    release.player_link,
-                    content_type=release.content_type,
-                    season_number=release.season_number,
-                    episode_number=episode_number,
-                    translation_id=release.translation_id,
-                )
-            except ValueError:
-                pass
-            else:
-                return "kodik_embed", player_url, release.id
-        if source_type == "kodik_embed":
-            return None
-
+    # AnimeLibrary intentionally uses one automatic provider again: AniLibria.
+    # Keep the resolver strict so old Kodik/multi-provider records can never
+    # silently become the active player for a new room.
+    requested_type = "anilibria_hls" if source_type == "auto" else source_type
+    if requested_type != "anilibria_hls":
+        return None
     stored_source = await resolve_video_source(
         db,
         anime_id=anime_id,
         episode_number=episode_number,
         source_id=source_id,
-        source_type=source_type,
+        source_type="anilibria_hls",
         source_label=source_label,
     )
-    if stored_source is not None:
-        return stored_source.source_type, stored_source.source_reference, stored_source.id
-    return None
+    if stored_source is None:
+        return None
+    return stored_source.source_type, stored_source.source_reference, stored_source.id
 
 
 async def unique_invite_code(db: AsyncSession, length: int = 8) -> str:
