@@ -37,9 +37,9 @@ STORED_VIDEO_SOURCE_TYPES = (
 MANAGED_SOURCE_TYPES = (*STORED_VIDEO_SOURCE_TYPES, "kodik_embed")
 SOURCE_PRIORITY = {
     "licensed_hls": 0,
-    "anilibria_hls": 1,
-    "licensed_mp4": 2,
-    "kodik_embed": 3,
+    "licensed_mp4": 1,
+    "kodik_embed": 2,
+    "anilibria_hls": 3,
     "official_youtube": 4,
 }
 NON_EPISODE_WORDS = (
