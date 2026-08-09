@@ -471,19 +471,11 @@ async def resolve_room_source(
     source_type: str,
     source_label: str | None = None,
 ) -> tuple[str, str, uuid.UUID] | None:
-    stored_source = None
-    if source_type != "kodik_embed":
-        stored_source = await resolve_video_source(
-            db,
-            anime_id=anime_id,
-            episode_number=episode_number,
-            source_id=source_id,
-            source_type=source_type,
-            source_label=source_label,
-        )
-    if stored_source is not None:
-        return stored_source.source_type, stored_source.source_reference, stored_source.id
-
+    # Kodik is an iframe embed and isn't subject to the browser CORS
+    # restrictions that direct HLS playback (anilibria_hls / licensed_hls /
+    # licensed_mp4) runs into, so for "auto" it is tried first and is the
+    # more reliable default. A caller that explicitly asked for a specific
+    # non-kodik source_type still goes straight to resolve_video_source below.
     if source_type in {"auto", "kodik_embed"}:
         release = await resolve_kodik_release(
             db,
@@ -501,8 +493,22 @@ async def resolve_room_source(
                     translation_id=release.translation_id,
                 )
             except ValueError:
-                return None
-            return "kodik_embed", player_url, release.id
+                pass
+            else:
+                return "kodik_embed", player_url, release.id
+        if source_type == "kodik_embed":
+            return None
+
+    stored_source = await resolve_video_source(
+        db,
+        anime_id=anime_id,
+        episode_number=episode_number,
+        source_id=source_id,
+        source_type=source_type,
+        source_label=source_label,
+    )
+    if stored_source is not None:
+        return stored_source.source_type, stored_source.source_reference, stored_source.id
     return None
 
 
