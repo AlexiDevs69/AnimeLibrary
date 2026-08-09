@@ -8,15 +8,23 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app import crud
 from app.auth import current_user, optional_user
 from app.database import get_db
-from app.models import Friendship, RoomInvitation, RoomMember, User, WatchRoom
+from app.models import (
+    Friendship,
+    RoomInvitation,
+    RoomMember,
+    User,
+    VideoSource,
+    WatchRoom,
+)
+from app.realtime import connections, room_state_cache
 from app.schemas import (
     RoomCreate,
+    RoomEpisodeChangeIn,
     RoomInvitationAcceptOut,
     RoomInvitationCreate,
     RoomJoinOut,
     RoomOut,
 )
-
 
 router = APIRouter(prefix="/api/rooms", tags=["rooms"])
 
@@ -45,6 +53,88 @@ async def room_detail(
     if room is None:
         raise HTTPException(status_code=404, detail="Кімнату не знайдено")
     return crud.room_to_schema(room)
+
+
+@router.patch("/{invite_code}/episode", response_model=RoomOut)
+async def change_room_episode(
+    invite_code: str,
+    payload: RoomEpisodeChangeIn,
+    user: User = Depends(current_user),
+    db: AsyncSession = Depends(get_db),
+) -> RoomOut:
+    room = await db.scalar(
+        select(WatchRoom)
+        .where(WatchRoom.invite_code == invite_code.upper())
+        .with_for_update()
+    )
+    if room is None or room.host_id != user.id:
+        raise HTTPException(status_code=404, detail="Перегляд не знайдено")
+    if room.anime_id is None:
+        raise HTTPException(status_code=409, detail="Спочатку виберіть аніме")
+    if payload.episode_number == room.episode_number:
+        current = await crud.get_room(db, room.invite_code)
+        if current is None:
+            raise HTTPException(status_code=404, detail="Перегляд не знайдено")
+        return crud.room_to_schema(current)
+
+    if room.source_type == "local_file":
+        room.source_id = None
+        room.source_reference = None
+        room.file_hash = None
+    else:
+        preferred_id = room.source_id if room.source_type == "kodik_embed" else None
+        preferred_label = None
+        if room.source_id is not None and room.source_type != "kodik_embed":
+            current_source = await db.get(VideoSource, room.source_id)
+            preferred_label = current_source.label if current_source is not None else None
+        resolved = await crud.resolve_room_source(
+            db,
+            anime_id=room.anime_id,
+            episode_number=payload.episode_number,
+            source_id=preferred_id,
+            source_type=room.source_type,
+            source_label=preferred_label,
+        )
+        if resolved is None:
+            resolved = await crud.resolve_room_source(
+                db,
+                anime_id=room.anime_id,
+                episode_number=payload.episode_number,
+                source_id=None,
+                source_type="auto",
+            )
+        if resolved is None:
+            raise HTTPException(
+                status_code=409,
+                detail="Для наступної серії ще немає доступного відео",
+            )
+        room.source_type, room.source_reference, room.source_id = resolved
+        room.file_hash = None
+
+    room.episode_number = payload.episode_number
+    room.current_time = 0
+    room.is_paused = True
+    room.playback_rate = 1
+    room.state_version += 1
+    room.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+
+    message = {
+        "type": "episode_changed",
+        "room_code": room.invite_code,
+        "episode_number": room.episode_number,
+        "current_time": 0,
+        "is_paused": True,
+        "playback_rate": 1,
+        "state_version": room.state_version,
+        "server_time": room.updated_at.isoformat(),
+    }
+    await room_state_cache.save(room.invite_code, message)
+    await connections.broadcast(room.invite_code, message)
+    current = await crud.get_room(db, room.invite_code)
+    if current is None:
+        raise HTTPException(status_code=404, detail="Перегляд не знайдено")
+    return crud.room_to_schema(current)
 
 
 @router.post(
